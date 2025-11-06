@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-rebar_development}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - intranet
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    env_file: .env.docker
+    environment:
+      - RAILS_ENV=development
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    links:
+      - postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["bin/rails", "server", "-b", "0.0.0.0"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    tty: true
+    stdin_open: true
+    networks:
+      - intranet
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./web:/app
+      - node_modules:/app/node_modules
+    links:
+      - api
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - intranet
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file: .env.docker
+    environment:
+      - RAILS_ENV=development
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-rebar_development}
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+    links:
+      - postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["bin/rails", "db:migrate"]
+    tty: true
+    networks:
+      - intranet
+
+volumes:
+  postgres:
+  bundle:
+  node_modules:
+
+networks:
+  intranet:
+    driver: bridge

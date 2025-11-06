@@ -1,0 +1,121 @@
+class TuplesController < ApplicationController
+  include ServiceAuth
+
+  rescue_from ForbiddenError do |e|
+    render json: { error: e.message }, status: :forbidden
+  end
+
+  def create
+    gate.allow_tuple_write!(
+      tenant: tenant,
+      ns: p[:ns],
+      id: p[:id],
+      relation: p[:relation],
+      subj_ns: p[:subj_ns],
+      subj_id: p[:subj_id]
+    )
+
+    repo.write(
+      ns: p[:ns],
+      id: p[:id],
+      relation: p[:relation],
+      subj_ns: p[:subj_ns],
+      subj_id: p[:subj_id],
+      subj_rel: p[:subj_rel]
+    )
+
+    render json: { ok: true }, status: :created
+  end
+
+  def destroy
+    gate.allow_tuple_write!(
+      tenant: tenant,
+      ns: p[:ns],
+      id: p[:id],
+      relation: p[:relation],
+      subj_ns: p[:subj_ns],
+      subj_id: p[:subj_id]
+    )
+
+    repo.delete(
+      ns: p[:ns],
+      id: p[:id],
+      relation: p[:relation],
+      subj_ns: p[:subj_ns],
+      subj_id: p[:subj_id],
+      subj_rel: p[:subj_rel]
+    )
+
+    render json: { ok: true }
+  end
+
+  def batch_create
+    tuples = params[:tuples] || []
+
+    tuples.each do |tuple|
+      gate.allow_tuple_write!(
+        tenant: tenant,
+        ns: tuple[:ns],
+        id: tuple[:id],
+        relation: tuple[:relation],
+        subj_ns: tuple[:subj_ns],
+        subj_id: tuple[:subj_id]
+      )
+    end
+
+    tuples.each do |tuple|
+      repo.write(
+        ns: tuple[:ns],
+        id: tuple[:id],
+        relation: tuple[:relation],
+        subj_ns: tuple[:subj_ns],
+        subj_id: tuple[:subj_id],
+        subj_rel: tuple[:subj_rel]
+      )
+    end
+
+    render json: { ok: true, count: tuples.size }, status: :created
+  end
+
+  def batch_destroy
+    tuples = params[:tuples] || []
+
+    tuples.each do |tuple|
+      gate.allow_tuple_write!(
+        tenant: tenant,
+        ns: tuple[:ns],
+        id: tuple[:id],
+        relation: tuple[:relation],
+        subj_ns: tuple[:subj_ns],
+        subj_id: tuple[:subj_id]
+      )
+    end
+
+    tuples.each do |tuple|
+      repo.delete(
+        ns: tuple[:ns],
+        id: tuple[:id],
+        relation: tuple[:relation],
+        subj_ns: tuple[:subj_ns],
+        subj_id: tuple[:subj_id],
+        subj_rel: tuple[:subj_rel]
+      )
+    end
+
+    render json: { ok: true, count: tuples.size }
+  end
+
+  private
+
+  def repo
+    RebacRepo.new(tenant: tenant)
+  end
+
+  def tenant
+    request.headers["X-Tenant"] || "default"
+  end
+
+  def p
+    params.permit(:ns, :id, :relation, :subj_ns, :subj_id, :subj_rel)
+  end
+end

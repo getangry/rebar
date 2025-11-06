@@ -1,0 +1,37 @@
+class AuthController < ApplicationController
+  include ServiceAuth
+
+  rescue_from ForbiddenError do |e|
+    render json: { error: e.message }, status: :forbidden
+  end
+
+  def check
+    gate.allow_check!(tenant: tenant, obj_ns: p[:obj_ns], obj_id: p[:obj_id], permission: p[:permission])
+    ok = engine.check(p[:subj_ns], p[:subj_id], p[:permission], p[:obj_ns], p[:obj_id])
+    render json: { allow: ok }
+  end
+
+  def explain
+    gate.allow_check!(tenant: tenant, obj_ns: p[:obj_ns], obj_id: p[:obj_id], permission: p[:permission])
+    path = engine.explain(p[:subj_ns], p[:subj_id], p[:permission], p[:obj_ns], p[:obj_id])
+    if path
+      render json: { allow: true, path: path }
+    else
+      render json: { allow: false }
+    end
+  end
+
+  private
+
+  def engine
+    PermissionEngine.new(repo: RebacRepo.new(tenant_id: tenant))
+  end
+
+  def tenant
+    request.headers["X-Tenant"] || "default"
+  end
+
+  def p
+    params.permit(:subj_ns, :subj_id, :permission, :obj_ns, :obj_id)
+  end
+end

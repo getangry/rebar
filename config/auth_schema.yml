@@ -1,0 +1,20 @@
+types:
+  user: {}
+
+  group:
+    relations:
+      member: ["user", "group"]
+
+  folder:
+    relations:
+      parent: ["folder"]
+      owner:  ["user","group"]
+      editor: ["owner", "group#editor"]
+      viewer: ["editor", "group#viewer"]
+
+  doc:
+    relations:
+      parent: ["folder"]
+      owner:  ["user","group"]
+      editor: ["owner", "parent->editor"]
+      viewer: ["editor", "parent->viewer"]
