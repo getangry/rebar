@@ -26,6 +26,57 @@ export interface ExplainPermissionResponse {
   path?: Array<Record<string, any>>;
 }
 
+export interface AuditLogTuple {
+  subject?: string;
+  object_id?: string;
+  relation?: string;
+  actor?: string;
+  actor_id?: string;
+  actor_rel?: string;
+}
+
+export interface AuditLog {
+  id: number;
+  tenant_id: string;
+  service_id: string;
+  actor_user_id?: string;
+  ip_address?: string;
+  action: string;
+  resource_type: string;
+  tuple: AuditLogTuple;
+  before_state?: any;
+  after_state?: any;
+  reason?: string;
+  metadata?: any;
+  created_at: string;
+  summary: string;
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLog[];
+  page: number;
+  per_page: number;
+}
+
+export interface AuditStatsResponse {
+  total_count: number;
+  by_action: Record<string, number>;
+  by_service: Record<string, number>;
+  by_resource_type: Record<string, number>;
+}
+
+export interface AuditLogFilters {
+  service_id?: string;
+  action_type?: string;
+  subject?: string;
+  object_id?: string;
+  actor?: string;
+  actor_id?: string;
+  since?: string;
+  page?: number;
+  per_page?: number;
+}
+
 export class RebarClient {
   private serviceId: string;
   private tenant: string;
@@ -113,6 +164,72 @@ export class RebarClient {
   async health(): Promise<any> {
     const response = await fetch(`${this.baseUrl}/up`);
     return response.text();
+  }
+
+  // Get audit logs with filters
+  async getAuditLogs(filters?: AuditLogFilters): Promise<AuditLogsResponse> {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+    }
+    const queryString = params.toString();
+    const url = `/api/audit_logs${queryString ? `?${queryString}` : ""}`;
+
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audit logs: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get a specific audit log
+  async getAuditLog(id: number): Promise<AuditLog> {
+    const response = await fetch(`${this.baseUrl}/api/audit_logs/${id}`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audit log: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get audit log statistics
+  async getAuditStats(since?: string): Promise<AuditStatsResponse> {
+    const params = new URLSearchParams();
+    if (since) {
+      params.append("since", since);
+    }
+    const queryString = params.toString();
+    const url = `/api/audit_logs/stats${queryString ? `?${queryString}` : ""}`;
+
+    const response = await fetch(`${this.baseUrl}${url}`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audit stats: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 }
 

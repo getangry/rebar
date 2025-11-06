@@ -10,23 +10,49 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2024_01_01_000001) do
+ActiveRecord::Schema[8.1].define(version: 2024_01_01_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.string "actor"
+    t.string "actor_id"
+    t.string "actor_rel"
+    t.string "actor_user_id"
+    t.jsonb "after_state"
+    t.jsonb "before_state"
+    t.datetime "created_at", default: -> { "now()" }, null: false
+    t.string "ip_address"
+    t.jsonb "metadata"
+    t.string "object_id"
+    t.string "reason"
+    t.string "relation"
+    t.string "resource_type", null: false
+    t.string "service_id", null: false
+    t.string "subject"
+    t.string "tenant_id", default: "default", null: false
+    t.string "user_agent"
+    t.index ["tenant_id", "action"], name: "idx_audit_action"
+    t.index ["tenant_id", "actor", "actor_id"], name: "idx_audit_actor"
+    t.index ["tenant_id", "created_at"], name: "idx_audit_tenant_time"
+    t.index ["tenant_id", "service_id"], name: "idx_audit_tenant_service"
+    t.index ["tenant_id", "subject", "object_id"], name: "idx_audit_resource"
+  end
+
   create_table "rel_tuples", primary_key: "pk", force: :cascade do |t|
+    t.string "actor", null: false
+    t.string "actor_id", null: false
+    t.string "actor_rel"
     t.datetime "created_at", default: -> { "now()" }, null: false
     t.string "id", null: false
-    t.string "subject", null: false
     t.string "relation", null: false
-    t.string "actor_id", null: false
-    t.string "actor", null: false
-    t.string "actor_rel"
+    t.string "subject", null: false
     t.string "tenant_id", default: "default", null: false
     t.index "tenant_id, subject, id, relation, actor, actor_id, COALESCE(actor_rel, ''::character varying)", name: "uq_rt_fact", unique: true
+    t.index ["tenant_id", "actor", "actor_id"], name: "idx_rt_actor"
     t.index ["tenant_id", "subject", "id", "relation"], name: "idx_rt_subj_rel"
     t.index ["tenant_id", "subject", "relation", "actor"], name: "idx_rt_subj_rel_actor"
-    t.index ["tenant_id", "actor", "actor_id"], name: "idx_rt_actor"
   end
 
   create_table "service_accounts", force: :cascade do |t|
@@ -40,14 +66,14 @@ ActiveRecord::Schema[8.1].define(version: 2024_01_01_000001) do
 
   create_table "service_grants", force: :cascade do |t|
     t.string "action", null: false
+    t.string "actor"
+    t.string "actor_prefix"
     t.datetime "created_at", null: false
-    t.string "subject"
-    t.string "subject_prefix"
     t.integer "rate_limit_qps"
     t.string "relations", array: true
     t.bigint "service_account_id", null: false
-    t.string "actor"
-    t.string "actor_prefix"
+    t.string "subject"
+    t.string "subject_prefix"
     t.string "tenant_id"
     t.datetime "updated_at", null: false
     t.index ["service_account_id", "action"], name: "index_service_grants_on_service_account_id_and_action"

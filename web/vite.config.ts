@@ -21,6 +21,10 @@ export default defineConfig({
         target: "http://api:3000",
         changeOrigin: true,
       },
+      "/api/audit_logs": {
+        target: "http://api:3000",
+        changeOrigin: true,
+      },
       "/api/up": {
         target: "http://api:3000",
         changeOrigin: true,

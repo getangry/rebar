@@ -22,7 +22,8 @@ module Api
         relation: p[:relation],
         actor: p[:actor],
         actor_id: p[:actor_id],
-        actor_rel: p[:actor_rel]
+        actor_rel: p[:actor_rel],
+        reason: p[:reason]
       )
 
       render json: { ok: true }, status: :created
@@ -44,7 +45,8 @@ module Api
         relation: p[:relation],
         actor: p[:actor],
         actor_id: p[:actor_id],
-        actor_rel: p[:actor_rel]
+        actor_rel: p[:actor_rel],
+        reason: p[:reason]
       )
 
       render json: { ok: true }
@@ -71,7 +73,8 @@ module Api
           relation: tuple[:relation],
           actor: tuple[:actor],
           actor_id: tuple[:actor_id],
-          actor_rel: tuple[:actor_rel]
+          actor_rel: tuple[:actor_rel],
+          reason: tuple[:reason]
         )
       end
 
@@ -99,7 +102,8 @@ module Api
           relation: tuple[:relation],
           actor: tuple[:actor],
           actor_id: tuple[:actor_id],
-          actor_rel: tuple[:actor_rel]
+          actor_rel: tuple[:actor_rel],
+          reason: tuple[:reason]
         )
       end
 
@@ -109,7 +113,16 @@ module Api
     private
 
     def repo
-      RebacRepo.new(tenant: tenant)
+      RebacRepo.new(tenant: tenant, audit_logger: audit_logger)
+    end
+
+    def audit_logger
+      @audit_logger ||= AuditLogger.new(
+        tenant_id: tenant,
+        service_id: request.headers["X-Service-Id"] || "unknown",
+        ip_address: request.remote_ip,
+        user_agent: request.user_agent
+      )
     end
 
     def tenant
@@ -117,7 +130,7 @@ module Api
     end
 
     def p
-      params.permit(:subject, :id, :relation, :actor, :actor_id, :actor_rel)
+      params.permit(:subject, :id, :relation, :actor, :actor_id, :actor_rel, :reason)
     end
   end
 end

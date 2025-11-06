@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { rebarClient, RelationshipTuple } from '../api/rebar';
+import { rebarClient } from '../api/rebar';
 
 interface Log {
   type: 'info' | 'success' | 'error';

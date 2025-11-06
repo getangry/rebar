@@ -16,6 +16,12 @@ Rails.application.routes.draw do
     delete "tuples", to: "tuples#destroy"
     post "tuples/batch", to: "tuples#batch_create"
     delete "tuples/batch", to: "tuples#batch_destroy"
+
+    # Audit Logs API
+    get "audit_logs", to: "audit_logs#index"
+    get "audit_logs/stats", to: "audit_logs#stats"
+    get "audit_logs/tuple_history", to: "audit_logs#tuple_history"
+    get "audit_logs/:id", to: "audit_logs#show"
   end
 
   # Defines the root path route ("/")
