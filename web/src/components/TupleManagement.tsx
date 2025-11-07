@@ -242,7 +242,7 @@ export default function TupleManagement() {
           <div>
             <strong>Indirect permission (via group):</strong>
             <code className="ml-2 bg-white px-2 py-1 rounded text-xs">
-              group:engineers#member → editor → project:proj-789
+              group:engineers → editor → project:proj-789
             </code>
           </div>
         </div>

@@ -1,4 +1,6 @@
 class RebacRepo
+  attr_reader :tenant_id
+
   def initialize(conn: ActiveRecord::Base.connection, tenant: "default", tenant_id: nil, audit_logger: nil)
     @conn = conn
     @tenant_id = tenant_id || tenant
@@ -79,7 +81,7 @@ class RebacRepo
         SELECT rt.actor, rt.actor_id
         FROM rel_tuples rt
         JOIN m ON rt.tenant_id=$1 AND rt.subject = m.subj_type AND rt.id = m.id
-        WHERE rt.relation='member' AND rt.actor !='user'
+        WHERE rt.relation='member'
       )
       SELECT DISTINCT subj_type AS subject, id FROM m WHERE subj_type='user'
     SQL

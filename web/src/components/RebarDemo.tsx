@@ -17,11 +17,51 @@ export default function RebarDemo() {
 
   const clearLogs = () => setLogs([]);
 
+  const clearDemoData = async () => {
+    setLoading(true);
+    clearLogs();
+
+    try {
+      addLog('info', '🧹 Clearing old demo data...');
+
+      // Delete all demo-related tuples
+      await rebarClient.batchDelete([
+        { subject: 'doc', id: 'quarterly-report', relation: 'owner', actor: 'user', actor_id: 'alice' },
+        { subject: 'doc', id: 'quarterly-report', relation: 'editor', actor: 'user', actor_id: 'bob' },
+        { subject: 'group', id: 'engineering', relation: 'member', actor: 'user', actor_id: 'charlie' },
+        { subject: 'group', id: 'engineering', relation: 'member', actor: 'user', actor_id: 'diana' },
+        { subject: 'doc', id: 'tech-specs', relation: 'viewer', actor: 'group', actor_id: 'engineering', actor_rel: 'member' },
+      ]);
+
+      addLog('success', '✅ Demo data cleared');
+      addLog('info', '');
+    } catch (error) {
+      addLog('error', `❌ Error clearing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const runDemo = async () => {
     setLoading(true);
     clearLogs();
 
     try {
+      addLog('info', '🧹 Clearing any existing demo data first...');
+
+      // Clear old data silently (don't fail if doesn't exist)
+      try {
+        await rebarClient.batchDelete([
+          { subject: 'doc', id: 'quarterly-report', relation: 'owner', actor: 'user', actor_id: 'alice' },
+          { subject: 'doc', id: 'quarterly-report', relation: 'editor', actor: 'user', actor_id: 'bob' },
+          { subject: 'group', id: 'engineering', relation: 'member', actor: 'user', actor_id: 'charlie' },
+          { subject: 'group', id: 'engineering', relation: 'member', actor: 'user', actor_id: 'diana' },
+          { subject: 'doc', id: 'tech-specs', relation: 'viewer', actor: 'group', actor_id: 'engineering', actor_rel: 'member' },
+        ]);
+      } catch {
+        // Ignore errors from deleting non-existent tuples
+      }
+
       addLog('info', '🚀 Starting Rebar API Demo...');
       addLog('info', '');
 
@@ -197,6 +237,22 @@ export default function RebarDemo() {
           }}
         >
           {loading ? '⏳ Running...' : '▶️ Run Demo'}
+        </button>
+
+        <button
+          onClick={clearDemoData}
+          disabled={loading}
+          style={{
+            padding: '0.75rem 1.5rem',
+            fontSize: '1rem',
+            background: loading ? '#ccc' : '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+        >
+          🧹 Clear Demo Data
         </button>
 
         <button

@@ -8,13 +8,13 @@ types:
   folder:
     relations:
       parent: ["folder"]
-      owner:  ["user","group"]
-      editor: ["owner", "group#editor"]
-      viewer: ["editor", "group#viewer"]
+      owner:  ["user", "group", "parent->owner"]
+      editor: ["owner", "parent->editor"]
+      viewer: ["editor", "parent->viewer"]
 
   doc:
     relations:
       parent: ["folder"]
-      owner:  ["user","group"]
+      owner:  ["user", "group"]
       editor: ["owner", "parent->editor"]
       viewer: ["editor", "parent->viewer"]

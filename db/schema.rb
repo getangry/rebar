@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2024_01_01_000003) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_07_050611) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,7 +50,10 @@ ActiveRecord::Schema[8.1].define(version: 2024_01_01_000003) do
     t.string "subject", null: false
     t.string "tenant_id", default: "default", null: false
     t.index "tenant_id, subject, id, relation, actor, actor_id, COALESCE(actor_rel, ''::character varying)", name: "uq_rt_fact", unique: true
+    t.index ["tenant_id", "actor", "actor_id", "subject", "id", "relation"], name: "idx_rt_actor_covering"
+    t.index ["tenant_id", "actor", "actor_id", "subject"], name: "idx_rt_actor_subject", where: "((subject)::text = 'group'::text)"
     t.index ["tenant_id", "actor", "actor_id"], name: "idx_rt_actor"
+    t.index ["tenant_id", "relation", "actor", "actor_id"], name: "idx_rt_parent_lookup", where: "((relation)::text = 'parent'::text)"
     t.index ["tenant_id", "subject", "id", "relation"], name: "idx_rt_subj_rel"
     t.index ["tenant_id", "subject", "relation", "actor"], name: "idx_rt_subj_rel_actor"
   end

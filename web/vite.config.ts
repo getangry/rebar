@@ -25,6 +25,14 @@ export default defineConfig({
         target: "http://api:3000",
         changeOrigin: true,
       },
+      "/api/schema": {
+        target: "http://api:3000",
+        changeOrigin: true,
+      },
+      "/api/actors": {
+        target: "http://api:3000",
+        changeOrigin: true,
+      },
       "/api/up": {
         target: "http://api:3000",
         changeOrigin: true,

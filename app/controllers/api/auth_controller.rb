@@ -25,7 +25,11 @@ module Api
     private
 
     def engine
-      PermissionEngine.new(repo: RebacRepo.new(tenant_id: tenant))
+      @engine ||= begin
+        schema_path = Rails.root.join("config/auth_schema.rb")
+        load schema_path # Load the schema to ensure it's fresh
+        PermissionEngine.new(schema: AuthSchema, repo: RebacRepo.new(tenant_id: tenant))
+      end
     end
 
     def tenant
@@ -33,7 +37,7 @@ module Api
     end
 
     def p
-      params.permit(:actor, :actor_id, :permission, :subject, :subject_id)
+      params.permit(:actor, :actor_id, :permission, :subject, :subject_id, :context)
     end
   end
 end

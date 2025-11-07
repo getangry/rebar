@@ -65,6 +65,88 @@ export interface AuditStatsResponse {
   by_resource_type: Record<string, number>;
 }
 
+export interface SchemaStats {
+  as_subject: number;
+  as_actor: number;
+  total: number;
+  relations: string[];
+}
+
+export interface SchemaResponse {
+  types: Record<string, {
+    relations?: Record<string, string[]>;
+  }>;
+  stats: Record<string, SchemaStats>;
+}
+
+export interface GraphNode {
+  id: string;
+  type: string;
+  object_id: string | number;
+  label: string;
+  relations: string[];
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  relation: string;
+  actor_rel?: string;
+}
+
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  node_count: number;
+  edge_count: number;
+  center_entity?: string;
+}
+
+export interface Entity {
+  id: string;
+  type: string;
+  object_id: string | number;
+}
+
+export interface EntitiesResponse {
+  entities: Record<string, Entity[]>;
+}
+
+export interface Permission {
+  permission: string;
+  type: 'direct' | 'group' | 'inherited';
+  via?: string;
+}
+
+export interface ResourcePermissions {
+  resource: string;
+  resource_type: string;
+  resource_id: string;
+  permissions: Permission[];
+  actions: string[];
+}
+
+export interface ActorPermissionsResponse {
+  actor: string;
+  total_permissions: number;
+  direct_count: number;
+  group_count: number;
+  inherited_count: number;
+  group_memberships: string[];
+  resources: ResourcePermissions[];
+}
+
+export interface GroupMembership {
+  group: string;
+  group_id: string;
+  role: string;
+}
+
+export interface ActorGroupsResponse {
+  actor: string;
+  memberships: GroupMembership[];
+}
+
 export interface AuditLogFilters {
   service_id?: string;
   action_type?: string;
@@ -227,6 +309,110 @@ export class RebarClient {
 
     if (!response.ok) {
       throw new Error(`Failed to fetch audit stats: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get schema information with statistics
+  async getSchema(): Promise<SchemaResponse> {
+    const response = await fetch(`${this.baseUrl}/api/schema`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch schema: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get relationship graph for visualization
+  async getGraph(): Promise<GraphResponse> {
+    const response = await fetch(`${this.baseUrl}/api/schema/graph`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch graph: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get list of all entities
+  async getEntities(): Promise<EntitiesResponse> {
+    const response = await fetch(`${this.baseUrl}/api/schema/entities`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch entities: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get relationships for a specific entity
+  async getRelationships(entityId: string): Promise<GraphResponse> {
+    // URL encode the entity_id since it contains ":"
+    const encodedEntityId = encodeURIComponent(entityId);
+    const response = await fetch(`${this.baseUrl}/api/schema/relationships/${encodedEntityId}`, {
+      headers: {
+        "X-Service-Id": this.serviceId,
+        "X-Tenant": this.tenant,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch relationships: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get all permissions for a specific actor
+  async getActorPermissions(actorType: string, actorId: string): Promise<ActorPermissionsResponse> {
+    const response = await fetch(
+      `${this.baseUrl}/api/actors/${encodeURIComponent(actorType)}/${encodeURIComponent(actorId)}/permissions`,
+      {
+        headers: {
+          "X-Service-Id": this.serviceId,
+          "X-Tenant": this.tenant,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch actor permissions: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get all groups an actor is a member of
+  async getActorGroups(actorType: string, actorId: string): Promise<ActorGroupsResponse> {
+    const response = await fetch(
+      `${this.baseUrl}/api/actors/${encodeURIComponent(actorType)}/${encodeURIComponent(actorId)}/groups`,
+      {
+        headers: {
+          "X-Service-Id": this.serviceId,
+          "X-Tenant": this.tenant,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch actor groups: ${response.statusText}`);
     }
 
     return response.json();
