@@ -1,8 +1,8 @@
-class CreateAuditLogs < ActiveRecord::Migration[7.1]
+class CreateAuditLogs < ActiveRecord::Migration[8.1]
   def change
-    create_table :audit_logs, id: :bigserial do |t|
+    create_table :audit_logs, id: :uuid do |t|
       # Who
-      t.string :tenant_id, null: false, default: "default"
+      t.string :tenant_id, null: false, default: 'default'
       t.string :service_id, null: false
       t.string :actor_user_id              # Optional: if we track the actual user
       t.string :ip_address
@@ -26,17 +26,17 @@ class CreateAuditLogs < ActiveRecord::Migration[7.1]
 
       # Why & additional context
       t.string :reason
-      t.jsonb :metadata                    # Any additional context
+      t.jsonb :metadata, default: {}       # Any additional context
 
       # When
-      t.datetime :created_at, null: false, default: -> { "NOW()" }
+      t.datetime :created_at, null: false, default: -> { 'NOW()' }
     end
 
     # Indexes for common queries
-    add_index :audit_logs, [:tenant_id, :created_at], name: "idx_audit_tenant_time"
-    add_index :audit_logs, [:tenant_id, :service_id], name: "idx_audit_tenant_service"
-    add_index :audit_logs, [:tenant_id, :subject, :object_id], name: "idx_audit_resource"
-    add_index :audit_logs, [:tenant_id, :action], name: "idx_audit_action"
-    add_index :audit_logs, [:tenant_id, :actor, :actor_id], name: "idx_audit_actor"
+    add_index :audit_logs, [:tenant_id, :created_at], name: 'idx_audit_tenant_time'
+    add_index :audit_logs, [:tenant_id, :service_id], name: 'idx_audit_tenant_service'
+    add_index :audit_logs, [:tenant_id, :subject, :object_id], name: 'idx_audit_resource'
+    add_index :audit_logs, [:tenant_id, :action], name: 'idx_audit_action'
+    add_index :audit_logs, [:tenant_id, :actor, :actor_id], name: 'idx_audit_actor'
   end
 end

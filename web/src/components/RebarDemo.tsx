@@ -337,10 +337,10 @@ export default function RebarDemo() {
       <div style={{ marginTop: '1rem', color: '#666', fontSize: '0.9rem' }}>
         <p>
           <strong>API Endpoints:</strong> This demo uses the Rebar API at{' '}
-          <code>http://localhost:3000</code> (proxied through Vite)
+          <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-900">http://localhost:3000</code> (proxied through Vite)
         </p>
         <p>
-          <strong>Documentation:</strong> See <code>USAGE.md</code> for complete API reference
+          <strong>Documentation:</strong> See <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-900">USAGE.md</code> for complete API reference
         </p>
       </div>
     </div>

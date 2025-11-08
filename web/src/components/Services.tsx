@@ -17,10 +17,11 @@ export default function Services() {
 
   // Create dialog
   const [showDialog, setShowDialog] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateServiceRequest>({
     name: '',
     description: '',
-    schema_name: 'default',
+    schemas: ['default'],
     active: true,
     allowed_subjects: [],
     allowed_relations: [],
@@ -52,12 +53,13 @@ export default function Services() {
     setFormData({
       name: '',
       description: '',
-      schema_name: 'default',
+      schemas: ['default'],
       active: true,
       allowed_subjects: [],
       allowed_relations: [],
       metadata: {},
     });
+    setFormError(null);
     setShowDialog(true);
   };
 
@@ -73,9 +75,9 @@ export default function Services() {
       }
 
       setShowDialog(false);
-      setError(null);
+      setFormError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create service');
+      setFormError(err instanceof Error ? err.message : 'Failed to create service');
     }
   };
 
@@ -103,15 +105,17 @@ export default function Services() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Services</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage API clients and their access permissions
-          </p>
+    <div className="px-4 sm:px-6 lg:px-8">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Services</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Manage API clients and their access permissions
+            </p>
+          </div>
+          <Button onClick={openCreateDialog}>Create Service</Button>
         </div>
-        <Button onClick={openCreateDialog}>Create Service</Button>
       </div>
 
       {error && (
@@ -121,16 +125,16 @@ export default function Services() {
       )}
 
       {loading ? (
-        <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+        <div className="text-center py-8 text-gray-600">
           Loading services...
         </div>
       ) : services.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">No services found</p>
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <p className="text-gray-600 mb-4">No services found</p>
           <Button onClick={openCreateDialog}>Create your first service</Button>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -148,24 +152,28 @@ export default function Services() {
                 <TableRow
                   key={service.id}
                   onClick={() => navigate(`/services/${service.id}`)}
-                  className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
+                  className="cursor-pointer hover:bg-gray-50"
                 >
                   <TableCell>
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
+                      <div className="font-medium text-gray-900">
                         {service.name}
                       </div>
                       {service.description && (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-500">
                           {service.description}
                         </p>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <code className="text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                      {service.schema_name}
-                    </code>
+                    <div className="flex flex-wrap gap-1">
+                      {service.schemas.map((schema) => (
+                        <code key={schema} className="text-xs text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                          {schema}
+                        </code>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={service.active ? 'success' : 'default'}>
@@ -173,26 +181,26 @@ export default function Services() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600">
                       {service.allowed_subjects.length === 0
                         ? 'All'
                         : service.allowed_subjects.length}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600">
                       {service.allowed_relations.length === 0
                         ? 'All'
                         : service.allowed_relations.length}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+                  <TableCell className="text-sm text-gray-600">
                     {formatDate(service.created_at)}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => handleDelete(service, e)}
-                      className="text-sm text-red-600 dark:text-red-400 hover:underline"
+                      className="text-sm text-red-600 hover:underline"
                     >
                       Delete
                     </button>
@@ -205,12 +213,20 @@ export default function Services() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={(open) => {
+        setShowDialog(open);
+        if (!open) setFormError(null);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create Service</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {formError && (
+              <Alert variant="destructive">
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
             <InputGroup
               label="Name"
               id="name"
@@ -226,14 +242,9 @@ export default function Services() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Optional description"
             />
-            <InputGroup
-              label="Schema Name"
-              id="schema_name"
-              required
-              value={formData.schema_name}
-              onChange={(e) => setFormData({ ...formData, schema_name: e.target.value })}
-              placeholder="default"
-            />
+            <p className="text-sm text-gray-500">
+              Note: Service will be created with "default" schema. You can add more schemas after creation.
+            </p>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -242,7 +253,7 @@ export default function Services() {
                 onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="active" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="active" className="text-sm font-medium text-gray-700">
                 Active
               </label>
             </div>
@@ -270,8 +281,8 @@ export default function Services() {
                 Save this API key now. For security reasons, it won't be shown again.
               </AlertDescription>
             </Alert>
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <code className="text-sm break-all">{newApiKey}</code>
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <code className="text-sm text-gray-900 break-all">{newApiKey}</code>
             </div>
             <div className="flex gap-2">
               <Button

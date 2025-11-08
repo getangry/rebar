@@ -36,7 +36,7 @@ export interface AuditLogTuple {
 }
 
 export interface AuditLog {
-  id: number;
+  id: string;
   tenant_id: string;
   service_id: string;
   actor_user_id?: string;
@@ -170,11 +170,21 @@ export interface AuditLogFilters {
   sort_order?: 'asc' | 'desc';
 }
 
+export interface ApiKey {
+  id: string;
+  name?: string;
+  key_prefix: string;
+  active: boolean;
+  last_used_at?: string;
+  usage_count: number;
+  created_at: string;
+}
+
 export interface Service {
-  id: number;
+  id: string;
   name: string;
   description?: string;
-  schema_name: string;
+  schemas: string[];
   active: boolean;
   tenant_id: string;
   allowed_subjects: string[];
@@ -182,13 +192,14 @@ export interface Service {
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
+  api_keys: ApiKey[];
   api_key?: string; // Only present on creation/regeneration
 }
 
 export interface CreateServiceRequest {
   name: string;
   description?: string;
-  schema_name?: string;
+  schemas?: string[];
   active?: boolean;
   allowed_subjects?: string[];
   allowed_relations?: string[];
@@ -236,11 +247,17 @@ export class RebarClient {
     });
 
     if (!response.ok) {
-      const error = await response
+      const errorData = await response
         .json()
         .catch(() => ({ error: response.statusText }));
+
+      // If there are validation errors, include them in the message
+      if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        throw new Error(errorData.errors.join(', '));
+      }
+
       throw new Error(
-        error.error || `HTTP ${response.status}: ${response.statusText}`
+        errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`
       );
     }
 
@@ -477,7 +494,7 @@ export class RebarClient {
   }
 
   // Get a specific service
-  async getService(id: number): Promise<Service> {
+  async getService(id: string): Promise<Service> {
     return this.request("GET", `/api/services/${id}`);
   }
 
@@ -487,48 +504,68 @@ export class RebarClient {
   }
 
   // Update a service
-  async updateService(id: number, data: Partial<CreateServiceRequest>): Promise<Service> {
+  async updateService(id: string, data: Partial<CreateServiceRequest>): Promise<Service> {
     return this.request("PATCH", `/api/services/${id}`, { service: data });
   }
 
   // Delete a service
-  async deleteService(id: number): Promise<void> {
+  async deleteService(id: string): Promise<void> {
     return this.request("DELETE", `/api/services/${id}`);
   }
 
-  // Regenerate service API key
-  async regenerateServiceKey(id: number): Promise<RegenerateKeyResponse> {
+  // Regenerate service API key (deprecated - use createApiKey instead)
+  async regenerateServiceKey(id: string): Promise<RegenerateKeyResponse> {
     return this.request("POST", `/api/services/${id}/regenerate_key`);
   }
 
+  // Create a new API key for a service
+  async createApiKey(serviceId: string, name?: string): Promise<{ message: string; api_key: string; service: Service }> {
+    return this.request("POST", `/api/services/${serviceId}/api_keys`, { name });
+  }
+
+  // Revoke an API key
+  async revokeApiKey(serviceId: string, apiKeyId: string): Promise<{ message: string; service: Service }> {
+    return this.request("DELETE", `/api/services/${serviceId}/api_keys/${apiKeyId}`);
+  }
+
   // Activate a service
-  async activateService(id: number): Promise<Service> {
+  async activateService(id: string): Promise<Service> {
     return this.request("POST", `/api/services/${id}/activate`);
   }
 
   // Deactivate a service
-  async deactivateService(id: number): Promise<Service> {
+  async deactivateService(id: string): Promise<Service> {
     return this.request("POST", `/api/services/${id}/deactivate`);
   }
 
   // Add allowed subject to service
-  async addServiceSubject(id: number, subject: string): Promise<Service> {
+  async addServiceSubject(id: string, subject: string): Promise<Service> {
     return this.request("POST", `/api/services/${id}/subjects`, { subject });
   }
 
   // Remove allowed subject from service
-  async removeServiceSubject(id: number, subject: string): Promise<Service> {
+  async removeServiceSubject(id: string, subject: string): Promise<Service> {
     return this.request("DELETE", `/api/services/${id}/subjects/${encodeURIComponent(subject)}`);
   }
 
   // Add allowed relation to service
-  async addServiceRelation(id: number, relation: string): Promise<Service> {
+  async addServiceRelation(id: string, relation: string): Promise<Service> {
     return this.request("POST", `/api/services/${id}/relations`, { relation });
   }
 
   // Remove allowed relation from service
-  async removeServiceRelation(id: number, relation: string): Promise<Service> {
+  async removeServiceRelation(id: string, relation: string): Promise<Service> {
     return this.request("DELETE", `/api/services/${id}/relations/${encodeURIComponent(relation)}`);
+  }
+
+  // Add schema to service
+  async addServiceSchema(id: string, schema: string): Promise<Service> {
+    return this.request("POST", `/api/services/${id}/schemas`, { schema });
+  }
+
+  // Remove schema from service
+  async removeServiceSchema(id: string, schema: string): Promise<Service> {
+    return this.request("DELETE", `/api/services/${id}/schemas/${encodeURIComponent(schema)}`);
   }
 }
 

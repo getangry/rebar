@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Generate API documentation from OpenAPI spec
+# Usage: bin/generate_docs
+
+set -e
+
+echo "📚 Generating OpenAPI specification..."
+docker compose exec api bin/rails rswag:specs:swaggerize
+
+echo "✅ OpenAPI documentation generated successfully!"
+echo "   Swagger UI: http://localhost:3000/api/openapi/index.html"
+echo "   OpenAPI YAML: http://localhost:3000/api/openapi/v1/swagger.yaml"
+echo "   Integrated Docs: http://localhost:8080/docs"

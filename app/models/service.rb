@@ -2,11 +2,14 @@ require 'securerandom'
 require 'digest'
 
 class Service < ApplicationRecord
+  # Associations
+  has_many :api_keys, dependent: :destroy
+
   # Validations
   validates :name, presence: true, uniqueness: { scope: :tenant_id }
   validates :tenant_id, presence: true
-  validates :api_key_hash, presence: true, uniqueness: true
-  validates :schema_name, presence: true
+  validates :schemas, presence: true
+  validate :schemas_must_be_array
 
   # Scopes
   scope :active, -> { where(active: true) }
@@ -16,25 +19,33 @@ class Service < ApplicationRecord
   attr_accessor :api_key
 
   # Callbacks
-  before_validation :generate_api_key, on: :create, unless: :api_key_hash
+  after_create :create_default_api_key
 
   ##
-  # Generate a new API key
-  # Format: rebar_live_<random_32_chars> or rebar_test_<random_32_chars>
+  # Create default API key after service creation
   #
-  def generate_api_key
-    prefix = Rails.env.production? ? 'rebar_live' : 'rebar_test'
-    self.api_key = "#{prefix}_#{SecureRandom.alphanumeric(32)}"
-    self.api_key_hash = hash_api_key(self.api_key)
+  def create_default_api_key
+    api_key_record = api_keys.create!(name: "Default API Key")
+    self.api_key = api_key_record.key # Store plain key in virtual attribute
   end
 
   ##
-  # Regenerate API key (returns new plain key)
+  # Generate a new API key (creates new ApiKey record)
+  #
+  def create_api_key(name: nil)
+    api_key_record = api_keys.create!(name: name)
+    api_key_record.key # Return plain key (only shown once)
+  end
+
+  ##
+  # Regenerate API key (deprecated - use create_api_key instead)
+  # For backward compatibility, revokes all old keys and creates a new one
   #
   def regenerate_api_key!
-    generate_api_key
-    save!
-    api_key
+    api_keys.active.each(&:revoke!)
+    new_key = create_api_key(name: "Regenerated API Key")
+    self.api_key = new_key
+    new_key
   end
 
   ##
@@ -42,16 +53,15 @@ class Service < ApplicationRecord
   #
   def verify_api_key(key)
     return false if key.blank?
-    hash_api_key(key) == api_key_hash
+    api_keys.active.any? { |k| k.verify_api_key(key) }
   end
 
   ##
   # Find service by API key
   #
   def self.find_by_api_key(key)
-    return nil if key.blank?
-    hash = hash_api_key(key)
-    find_by(api_key_hash: hash, active: true)
+    api_key_record = ApiKey.find_by_key(key)
+    api_key_record&.service
   end
 
   ##
@@ -103,6 +113,23 @@ class Service < ApplicationRecord
   end
 
   ##
+  # Add schema
+  #
+  def add_schema(schema)
+    self.schemas = (schemas + [schema]).uniq
+    save
+  end
+
+  ##
+  # Remove schema
+  #
+  def remove_schema(schema)
+    return false if schemas.length <= 1 # Must have at least one schema
+    self.schemas = schemas - [schema]
+    save
+  end
+
+  ##
   # Deactivate service
   #
   def deactivate!
@@ -117,6 +144,12 @@ class Service < ApplicationRecord
   end
 
   private
+
+  def schemas_must_be_array
+    unless schemas.is_a?(Array) && schemas.any?
+      errors.add(:schemas, 'must be an array with at least one schema')
+    end
+  end
 
   def self.hash_api_key(key)
     Digest::SHA256.hexdigest(key)

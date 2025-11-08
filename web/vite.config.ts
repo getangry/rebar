@@ -37,6 +37,10 @@ export default defineConfig({
         target: "http://api:3000",
         changeOrigin: true,
       },
+      "/api/openapi": {
+        target: "http://api:3000",
+        changeOrigin: true,
+      },
       "/api/up": {
         target: "http://api:3000",
         changeOrigin: true,

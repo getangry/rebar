@@ -6,15 +6,21 @@ module Api
       render json: { error: e.message }, status: :forbidden
     end
 
+    rescue_from TupleParser::ParseError do |e|
+      render json: { error: "Invalid tuple format: #{e.message}" }, status: :unprocessable_entity
+    end
+
     def check
-      gate.allow_check!(tenant: tenant, subject: p[:subject], subject_id: p[:subject_id], permission: p[:permission])
-      ok = engine.check(p[:actor], p[:actor_id], p[:permission], p[:subject], p[:subject_id])
+      parsed = parse_request_params
+      gate.allow_check!(tenant: tenant, subject: parsed[:subject], subject_id: parsed[:subject_id], permission: parsed[:permission])
+      ok = engine.check(parsed[:actor], parsed[:actor_id], parsed[:permission], parsed[:subject], parsed[:subject_id])
       render json: { allow: ok }
     end
 
     def explain
-      gate.allow_check!(tenant: tenant, subject: p[:subject], subject_id: p[:subject_id], permission: p[:permission])
-      path = engine.explain(p[:actor], p[:actor_id], p[:permission], p[:subject], p[:subject_id])
+      parsed = parse_request_params
+      gate.allow_check!(tenant: tenant, subject: parsed[:subject], subject_id: parsed[:subject_id], permission: parsed[:permission])
+      path = engine.explain(parsed[:actor], parsed[:actor_id], parsed[:permission], parsed[:subject], parsed[:subject_id])
       if path
         render json: { allow: true, path: path }
       else
@@ -23,6 +29,15 @@ module Api
     end
 
     private
+
+    def parse_request_params
+      # Support both tuple format and traditional JSON format
+      if params[:tuple].present?
+        TupleParser.parse(params[:tuple])
+      else
+        p
+      end
+    end
 
     def engine
       @engine ||= begin

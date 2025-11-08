@@ -194,7 +194,7 @@ export default function TupleManagement() {
                       value={newTuple.reason}
                       onChange={(e) => setNewTuple({ ...newTuple, reason: e.target.value })}
                       placeholder="Why is this relationship being created? (appears in audit logs)"
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -223,25 +223,25 @@ export default function TupleManagement() {
         <div className="space-y-3 text-sm text-gray-700">
           <div>
             <strong>Grant ownership:</strong>
-            <code className="ml-2 bg-white px-2 py-1 rounded text-xs">
+            <code className="ml-2 bg-white px-2 py-1 rounded text-xs text-gray-900">
               user:alice → owner → document:doc-123
             </code>
           </div>
           <div>
             <strong>Add viewer:</strong>
-            <code className="ml-2 bg-white px-2 py-1 rounded text-xs">
+            <code className="ml-2 bg-white px-2 py-1 rounded text-xs text-gray-900">
               user:bob → viewer → folder:folder-456
             </code>
           </div>
           <div>
             <strong>Group membership:</strong>
-            <code className="ml-2 bg-white px-2 py-1 rounded text-xs">
+            <code className="ml-2 bg-white px-2 py-1 rounded text-xs text-gray-900">
               user:charlie → member → group:engineers
             </code>
           </div>
           <div>
             <strong>Indirect permission (via group):</strong>
-            <code className="ml-2 bg-white px-2 py-1 rounded text-xs">
+            <code className="ml-2 bg-white px-2 py-1 rounded text-xs text-gray-900">
               group:engineers → editor → project:proj-789
             </code>
           </div>

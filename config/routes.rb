@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api/openapi'
+  mount Rswag::Api::Engine => '/api/openapi'
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -47,6 +49,10 @@ Rails.application.routes.draw do
         delete 'subjects/:subject', to: 'services#remove_subject'
         post 'relations', to: 'services#add_relation'
         delete 'relations/:relation', to: 'services#remove_relation'
+        post 'schemas', to: 'services#add_schema'
+        delete 'schemas/:schema', to: 'services#remove_schema'
+        post 'api_keys', to: 'services#create_api_key'
+        delete 'api_keys/:api_key_id', to: 'services#revoke_api_key'
       end
     end
   end
