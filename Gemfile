@@ -11,6 +11,7 @@ gem "puma", ">= 5.0"
 
 gem 'redis'
 gem "oj", "~> 3.16"
+gem 'uuid7', '~> 0.2' # Time-sorted UUIDs
 
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
@@ -43,6 +44,9 @@ group :development, :test do
   gem "rspec-rails", "~> 8.0"
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
+  # OpenAPI/Swagger documentation
+  gem 'rswag-specs'
+
   # Audits gems for known security defects (use config/bundler-audit.yml to ignore issues)
   gem "bundler-audit", require: false
 
@@ -52,3 +56,7 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 end
+
+# OpenAPI/Swagger UI
+gem 'rswag-api'
+gem 'rswag-ui'

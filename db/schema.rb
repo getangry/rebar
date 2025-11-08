@@ -10,10 +10,34 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_08_075847) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_081958) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+
+  create_table "analytics_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "actor"
+    t.string "actor_id"
+    t.boolean "allowed"
+    t.uuid "api_key_id"
+    t.datetime "created_at", precision: nil, null: false
+    t.string "endpoint"
+    t.string "event_type", null: false
+    t.string "ip_address"
+    t.integer "latency_ms"
+    t.jsonb "metadata", default: {}
+    t.string "permission"
+    t.uuid "service_id"
+    t.string "subject"
+    t.string "subject_id"
+    t.string "tenant_id", default: "default", null: false
+    t.index ["api_key_id", "created_at"], name: "idx_analytics_apikey_time"
+    t.index ["event_type", "created_at"], name: "idx_analytics_event_time"
+    t.index ["service_id", "created_at"], name: "idx_analytics_service_time"
+    t.index ["subject", "permission"], name: "idx_analytics_permission"
+    t.index ["tenant_id", "created_at"], name: "idx_analytics_tenant_time"
+    t.index ["tenant_id", "event_type", "allowed"], name: "idx_analytics_checks"
+  end
 
   create_table "api_keys", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.boolean "active", default: true, null: false

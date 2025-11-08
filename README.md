@@ -39,6 +39,25 @@ Services:
 - **Frontend**: http://localhost:8080
 - **PostgreSQL**: localhost:5432
 
+## API Documentation
+
+Comprehensive API documentation is integrated into the UI:
+
+- **Integrated Docs** (recommended): http://localhost:8080/docs
+  - Quick start guide with common examples
+  - Styled with the main application UI
+  - Easy to navigate with tabs
+
+- **OpenAPI/Swagger**: http://localhost:3000/api/openapi/index.html
+  - Interactive API explorer
+  - Complete endpoint reference
+  - OpenAPI spec: http://localhost:3000/api/openapi/v1/swagger.yaml
+
+To regenerate OpenAPI documentation after API changes:
+```bash
+bin/generate_docs
+```
+
 ## Authorization Schema
 
 The authorization schema is defined in `config/auth_schema.rb` using a Ruby DSL:
@@ -93,6 +112,8 @@ end
 ### Authorization
 
 #### Check Permission
+
+**JSON Format:**
 ```bash
 POST /api/auth/check
 Headers: X-Service-Id, X-Tenant
@@ -105,6 +126,18 @@ Body: {
 }
 Response: { "allow": true }
 ```
+
+**Zanzibar Tuple Format:**
+```bash
+POST /api/auth/check
+Headers: X-Service-Id, X-Tenant
+Body: {
+  "tuple": "doc:quarterly-report#viewer@user:alice"
+}
+Response: { "allow": true }
+```
+
+The tuple format follows the standard Zanzibar notation: `subject:id#relation@actor:id`
 
 #### Explain Permission
 ```bash

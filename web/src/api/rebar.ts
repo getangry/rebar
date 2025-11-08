@@ -216,6 +216,80 @@ export interface RegenerateKeyResponse {
   service: Service;
 }
 
+// Analytics interfaces
+export interface AnalyticsMetrics {
+  total_checks: number;
+  allowed_checks: number;
+  denied_checks: number;
+  success_rate: number;
+  avg_latency_ms: number;
+  period: {
+    start: string;
+    end: string;
+  };
+}
+
+export interface TopPermission {
+  subject: string;
+  permission: string;
+  total_checks: number;
+  allowed: number;
+  denied: number;
+  denial_rate: number;
+}
+
+export interface TopPermissionsResponse {
+  permissions: TopPermission[];
+}
+
+export interface FailedAttempt {
+  actor: string;
+  actor_id: string;
+  subject: string;
+  subject_id: string;
+  permission: string;
+  attempt_count: number;
+  last_attempt: string;
+}
+
+export interface FailedAttemptsResponse {
+  attempts: FailedAttempt[];
+}
+
+export interface ServiceUsage {
+  service_id: string;
+  service_name: string;
+  total_requests: number;
+  avg_latency_ms: number;
+  event_types_count: number;
+}
+
+export interface ServiceUsageResponse {
+  services: ServiceUsage[];
+}
+
+export interface ApiKeyUsage {
+  api_key_id: string;
+  api_key_name: string;
+  key_prefix: string;
+  total_requests: number;
+  last_used_at: string;
+}
+
+export interface ApiKeyUsageResponse {
+  api_keys: ApiKeyUsage[];
+}
+
+export interface TimeSeriesDataPoint {
+  timestamp: string;
+  allowed: boolean;
+  count: number;
+}
+
+export interface TimeSeriesResponse {
+  data: TimeSeriesDataPoint[];
+}
+
 export class RebarClient {
   private serviceId: string;
   private tenant: string;
@@ -566,6 +640,61 @@ export class RebarClient {
   // Remove schema from service
   async removeServiceSchema(id: string, schema: string): Promise<Service> {
     return this.request("DELETE", `/api/services/${id}/schemas/${encodeURIComponent(schema)}`);
+  }
+
+  // Analytics API
+
+  // Get permission check metrics
+  async getAnalyticsMetrics(params?: { since?: string; service_id?: string }): Promise<AnalyticsMetrics> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    if (params?.service_id) queryParams.append('service_id', params.service_id);
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/metrics${query ? `?${query}` : ''}`);
+  }
+
+  // Get top checked permissions
+  async getTopPermissions(params?: { since?: string; limit?: number }): Promise<TopPermissionsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/top_permissions${query ? `?${query}` : ''}`);
+  }
+
+  // Get failed access attempts
+  async getFailedAttempts(params?: { since?: string; limit?: number }): Promise<FailedAttemptsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/failed_attempts${query ? `?${query}` : ''}`);
+  }
+
+  // Get service usage statistics
+  async getServiceUsage(params?: { since?: string }): Promise<ServiceUsageResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/service_usage${query ? `?${query}` : ''}`);
+  }
+
+  // Get API key usage statistics
+  async getApiKeyUsage(params?: { since?: string; service_id?: string }): Promise<ApiKeyUsageResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    if (params?.service_id) queryParams.append('service_id', params.service_id);
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/api_key_usage${query ? `?${query}` : ''}`);
+  }
+
+  // Get time-series data
+  async getTimeSeries(params?: { since?: string; interval?: string }): Promise<TimeSeriesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append('since', params.since);
+    if (params?.interval) queryParams.append('interval', params.interval);
+    const query = queryParams.toString();
+    return this.request("GET", `/api/analytics/time_series${query ? `?${query}` : ''}`);
   }
 }
 

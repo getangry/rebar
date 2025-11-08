@@ -55,6 +55,14 @@ Rails.application.routes.draw do
         delete 'api_keys/:api_key_id', to: 'services#revoke_api_key'
       end
     end
+
+    # Analytics API
+    get "analytics/metrics", to: "analytics#metrics"
+    get "analytics/top_permissions", to: "analytics#top_permissions"
+    get "analytics/failed_attempts", to: "analytics#failed_attempts"
+    get "analytics/service_usage", to: "analytics#service_usage"
+    get "analytics/api_key_usage", to: "analytics#api_key_usage"
+    get "analytics/time_series", to: "analytics#time_series"
   end
 
   # Defines the root path route ("/")
