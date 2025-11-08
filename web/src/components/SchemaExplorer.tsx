@@ -12,22 +12,27 @@ export default function SchemaExplorer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showGraph, setShowGraph] = useState(false);
+  const [selectedSchema, setSelectedSchema] = useState<string>('default');
 
   useEffect(() => {
     loadSchema();
-  }, []);
+  }, [selectedSchema]);
 
   const loadSchema = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await rebarClient.getSchema();
+      const data = await rebarClient.getSchema(selectedSchema);
       setSchema(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load schema');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSchemaChange = (schemaName: string) => {
+    setSelectedSchema(schemaName);
   };
 
   if (loading) {
@@ -76,8 +81,34 @@ export default function SchemaExplorer() {
     <div className="px-4 sm:px-6 lg:px-8">
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Schema Explorer</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold text-gray-900">Schema Explorer</h1>
+            {schema?.current_schema && (
+              <p className="mt-1 text-sm text-gray-600">{schema.current_schema.purpose}</p>
+            )}
+          </div>
+          {schema?.available_schemas && schema.available_schemas.length > 1 && (
+            <div className="ml-4">
+              <label htmlFor="schema-select" className="block text-sm font-medium text-gray-700 mb-1">
+                Select Schema
+              </label>
+              <select
+                id="schema-select"
+                value={selectedSchema}
+                onChange={(e) => handleSchemaChange(e.target.value)}
+                className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+              >
+                {schema.available_schemas.map((s) => (
+                  <option key={s.name} value={s.name}>
+                    {s.name} ({s.type_count} types)
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <p className="mt-4 text-sm text-gray-600">
           Browse entity types, their allowed relations, and view relationship statistics.
         </p>
       </div>

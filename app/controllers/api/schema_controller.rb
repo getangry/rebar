@@ -2,26 +2,33 @@ module Api
   class SchemaController < ::ApplicationController
     include ServiceAuth
 
-    # GET /api/schema
+    # GET /api/schema?schema_name=default
     # Returns the authorization schema with statistics
     def index
       tenant_id = request.headers["X-Tenant"] || "default"
+      schema_name = params[:schema_name] || 'default'
 
-      # Load the schema
-      schema_path = Rails.root.join("config/auth_schema.rb")
-      load schema_path
+      # Load all schemas
+      schema_index = Rails.root.join("schemas/index.rb")
+      load schema_index
 
-      schema_hash = AuthSchema.to_legacy_yaml
-      
+      # Get the requested schema
+      schema = AuthSchema.get_schema(schema_name)
+      unless schema
+        return render json: { error: "Schema '#{schema_name}' not found" }, status: :not_found
+      end
+
+      schema_hash = schema.to_legacy_yaml
+
       # Get statistics for each type
       stats = {}
       schema_hash["types"].each do |type_name, type_def|
         # Count tuples where this type is the subject
         as_subject = RelTuple.where(tenant_id: tenant_id, subject: type_name).count
-        
+
         # Count tuples where this type is the actor
         as_actor = RelTuple.where(tenant_id: tenant_id, actor: type_name).count
-        
+
         stats[type_name] = {
           as_subject: as_subject,
           as_actor: as_actor,
@@ -29,8 +36,23 @@ module Api
           relations: type_def["relations"]&.keys || []
         }
       end
-      
+
+      # Include available schemas and current schema info
+      available_schemas = AuthSchema.list_schemas.map do |name|
+        info = AuthSchema.schema_info(name)
+        {
+          name: info[:name],
+          purpose: info[:purpose],
+          type_count: info[:type_count]
+        }
+      end
+
       render json: {
+        current_schema: {
+          name: schema_name,
+          purpose: schema.purpose
+        },
+        available_schemas: available_schemas,
         types: schema_hash["types"],
         stats: stats
       }

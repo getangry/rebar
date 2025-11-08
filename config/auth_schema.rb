@@ -1,7 +1,8 @@
 # Rebar Authorization Schema (Ruby DSL)
-# This schema defines types, relations, and computed permissions
+# This file defines multiple named schemas for different use cases
 
-AuthSchema.define do
+# Default Schema - Document & Folder Management
+AuthSchema.schema :default, purpose: "Document and folder management with hierarchical permissions" do
   # User type - basic entity with no relations
   type :user
 
@@ -93,6 +94,29 @@ AuthSchema.define do
     relation :viewer, allow: [:editor, "parent->viewer"]
   end
 
+  # Comment - generic comment entity
+  type :comment do
+    relation :owner, allow: [:user, :group]
+    relation :editor, allow: [:owner]
+    relation :viewer, allow: [:editor]
+  end
+
+  # Wiki Page
+  type :wiki_page do
+    relation :owner, allow: [:user, :group]
+    relation :editor, allow: [:owner]
+    relation :viewer, allow: [:editor]
+  end
+end
+
+# Organization Schema - Organizational Hierarchy
+AuthSchema.schema :organization, purpose: "Organization, department, and team hierarchy management" do
+  type :user
+
+  type :group do
+    relation :member, allow: [:user, :group]
+  end
+
   # Organization - top-level entity
   type :organization do
     relation :owner, allow: [:user, :group]
@@ -115,6 +139,15 @@ AuthSchema.define do
     relation :owner, allow: [:user, :group, "parent->owner"]
     relation :admin, allow: [:owner, "parent->admin"]
     relation :member, allow: [:admin]
+  end
+end
+
+# Workspace Schema - Project & Repository Management
+AuthSchema.schema :workspace, purpose: "Workspace, project, and repository management for development teams" do
+  type :user
+
+  type :group do
+    relation :member, allow: [:user, :group]
   end
 
   # Workspace - container for projects
@@ -159,19 +192,14 @@ AuthSchema.define do
     relation :reviewer, allow: [:owner, "parent->maintainer"]
     relation :viewer, allow: [:reviewer, "parent->viewer"]
   end
+end
 
-  # Comment - generic comment entity
-  type :comment do
-    relation :owner, allow: [:user, :group]
-    relation :editor, allow: [:owner]
-    relation :viewer, allow: [:editor]
-  end
+# Data Analytics Schema - Dashboards, Reports, and Datasets
+AuthSchema.schema :analytics, purpose: "Data analytics resources including dashboards, reports, and datasets" do
+  type :user
 
-  # Wiki Page
-  type :wiki_page do
-    relation :owner, allow: [:user, :group]
-    relation :editor, allow: [:owner]
-    relation :viewer, allow: [:editor]
+  type :group do
+    relation :member, allow: [:user, :group]
   end
 
   # Dashboard
@@ -192,6 +220,15 @@ AuthSchema.define do
     relation :owner, allow: [:user, :group]
     relation :editor, allow: [:owner]
     relation :viewer, allow: [:editor]
+  end
+end
+
+# DevOps Schema - Infrastructure and Operations
+AuthSchema.schema :devops, purpose: "DevOps resources including pipelines, secrets, API keys, and integrations" do
+  type :user
+
+  type :group do
+    relation :member, allow: [:user, :group]
   end
 
   # Pipeline (CI/CD pipeline)

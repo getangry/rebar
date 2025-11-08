@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_07_050611) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_042953) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -91,5 +91,22 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_07_050611) do
     t.datetime "updated_at", null: false
     t.index ["service_account_id"], name: "index_service_tokens_on_service_account_id"
     t.index ["token_hash"], name: "index_service_tokens_on_token_hash", unique: true
+  end
+
+  create_table "services", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.jsonb "allowed_relations", default: []
+    t.jsonb "allowed_subjects", default: []
+    t.string "api_key_hash", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.jsonb "metadata", default: {}
+    t.string "name", null: false
+    t.string "schema_name", default: "default"
+    t.string "tenant_id", default: "default", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_services_on_active"
+    t.index ["api_key_hash"], name: "index_services_on_api_key_hash", unique: true
+    t.index ["tenant_id", "name"], name: "index_services_on_tenant_id_and_name", unique: true
   end
 end

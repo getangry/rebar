@@ -1,0 +1,29 @@
+{
+  "name": "@rebar/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Rebar ReBAC authorization service",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "rebar",
+    "rebac",
+    "authorization",
+    "permissions",
+    "access-control"
+  ],
+  "author": "Rebar Contributors",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

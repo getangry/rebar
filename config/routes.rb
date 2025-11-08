@@ -29,9 +29,26 @@ Rails.application.routes.draw do
     get "schema/entities", to: "schema#entities"
     get "schema/relationships/:entity_id", to: "schema#relationships"
 
+    # Schemas API (multi-schema support)
+    get "schemas", to: "schemas#index"
+    get "schemas/:name", to: "schemas#show"
+
     # Actors API
     get "actors/:actor_type/:actor_id/permissions", to: "actors#permissions"
     get "actors/:actor_type/:actor_id/groups", to: "actors#groups"
+
+    # Services API
+    resources :services, only: [:index, :show, :create, :update, :destroy] do
+      member do
+        post :regenerate_key
+        post :activate
+        post :deactivate
+        post 'subjects', to: 'services#add_subject'
+        delete 'subjects/:subject', to: 'services#remove_subject'
+        post 'relations', to: 'services#add_relation'
+        delete 'relations/:relation', to: 'services#remove_relation'
+      end
+    end
   end
 
   # Defines the root path route ("/")

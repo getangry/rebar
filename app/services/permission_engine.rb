@@ -14,20 +14,45 @@ class PermissionEngine
     attr_accessor :class_memory_cache, :class_cache_order, :cache_mutex
   end
 
-  def initialize(schema_path: nil, schema: nil, repo: RebacRepo.new, cache: true)
+  def initialize(schema_path: nil, schema: nil, schema_name: 'default', repo: RebacRepo.new, cache: true)
     @repo = repo
     @cache_enabled = cache
+    @schema_name = schema_name.to_s
 
     # Support both Ruby DSL and YAML schemas
     if schema
-      # Ruby DSL schema passed directly
+      # Ruby DSL schema passed directly - look up named schema
       @dsl_schema = schema
-      @schema = schema.to_legacy_yaml["types"]
+
+      # If a specific schema name is provided, use that schema
+      if schema.respond_to?(:get_schema)
+        named_schema = schema.get_schema(@schema_name)
+        if named_schema
+          @schema = named_schema.to_legacy_yaml["types"]
+        else
+          # Fallback to default schema if named schema not found
+          Rails.logger.warn "Schema '#{@schema_name}' not found, falling back to 'default'"
+          default_schema = schema.get_schema('default')
+          @schema = default_schema ? default_schema.to_legacy_yaml["types"] : {}
+        end
+      else
+        # Legacy: schema is the full AuthSchema class without multi-schema support
+        @schema = schema.to_legacy_yaml["types"]
+      end
     elsif schema_path&.to_s&.end_with?(".rb")
       # Load Ruby DSL schema
       require schema_path
       @dsl_schema = AuthSchema
-      @schema = @dsl_schema.to_legacy_yaml["types"]
+
+      # Look up the named schema
+      named_schema = AuthSchema.get_schema(@schema_name)
+      if named_schema
+        @schema = named_schema.to_legacy_yaml["types"]
+      else
+        Rails.logger.warn "Schema '#{@schema_name}' not found, falling back to 'default'"
+        default_schema = AuthSchema.get_schema('default')
+        @schema = default_schema ? default_schema.to_legacy_yaml["types"] : {}
+      end
     else
       # Load YAML schema (backward compatibility)
       schema_path ||= Rails.root.join("config/auth_schema.yml")

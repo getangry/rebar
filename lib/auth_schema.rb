@@ -4,12 +4,84 @@
 
 class AuthSchema
   class << self
-    attr_reader :types
+    attr_reader :types, :schemas
 
+    # Define a named schema with purpose
+    def schema(name, purpose: nil, &block)
+      @schemas ||= {}
+      schema_def = SchemaDefinition.new(name.to_s, purpose)
+      schema_def.instance_eval(&block)
+      @schemas[name.to_s] = schema_def
+      schema_def
+    end
+
+    # Backward compatibility: define without name creates/updates 'default' schema
     def define(&block)
+      schema(:default, purpose: "Default schema", &block)
+    end
+
+    # Get a specific schema by name
+    def get_schema(name)
+      @schemas ||= {}
+      @schemas[name.to_s]
+    end
+
+    # List all available schemas
+    def list_schemas
+      @schemas ||= {}
+      @schemas.keys
+    end
+
+    # Get schema metadata
+    def schema_info(name)
+      schema = get_schema(name)
+      return nil unless schema
+      {
+        name: schema.name,
+        purpose: schema.purpose,
+        types: schema.types.keys,
+        type_count: schema.types.size
+      }
+    end
+
+    # Legacy support - delegates to default schema
+    def type(name, &block)
+      default_schema = get_schema(:default) || schema(:default, purpose: "Default schema") {}
+      default_schema.type(name, &block)
+    end
+
+    def get_type(name)
+      default_schema = get_schema(:default)
+      default_schema&.get_type(name)
+    end
+
+    def types
+      default_schema = get_schema(:default)
+      default_schema&.types || {}
+    end
+
+    def to_legacy_yaml
+      default_schema = get_schema(:default)
+      return { "types" => {} } unless default_schema
+
+      {
+        "types" => default_schema.types.transform_values do |type_def|
+          {
+            "relations" => type_def.relations.transform_values { |rel| rel.allowed_types }
+          }.compact
+        end
+      }
+    end
+  end
+
+  # Schema Definition - container for types
+  class SchemaDefinition
+    attr_reader :name, :purpose, :types
+
+    def initialize(name, purpose = nil)
+      @name = name
+      @purpose = purpose
       @types = {}
-      instance_eval(&block)
-      self
     end
 
     def type(name, &block)
@@ -22,9 +94,8 @@ class AuthSchema
     end
 
     def to_legacy_yaml
-      # Convert to old YAML format for backward compatibility
       {
-        "types" => (@types || {}).transform_values do |type_def|
+        "types" => @types.transform_values do |type_def|
           {
             "relations" => type_def.relations.transform_values { |rel| rel.allowed_types }
           }.compact

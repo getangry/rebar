@@ -773,3 +773,88 @@ All errors return appropriate HTTP status codes with JSON error messages:
 ## Support
 
 For issues, questions, or contributions, please visit the project repository.
+
+## Schema Explorer & Visualization
+
+Rebar includes a web-based Schema Explorer that provides insights into your authorization model.
+
+### Features
+
+#### 1. Entity Type Overview
+
+View all entity types (user, group, folder, doc) with:
+- Total relationship counts
+- Breakdown of relationships where the type appears as subject vs actor
+- List of allowed relations for each type
+
+**Access:** Navigate to the "Schema" tab in the web UI at `http://localhost:8080`
+
+#### 2. Interactive Relationship Graph
+
+Visualize your entire authorization graph using an interactive tree layout powered by visx:
+- Color-coded nodes by entity type (users, groups, docs, folders)
+- Hierarchical tree visualization showing relationships
+- Node count summaries grouped by type
+
+**Access:** Click "View Relationship Graph" button in the Schema Explorer
+
+#### 3. API Endpoints
+
+**Get Schema Information:**
+```bash
+curl http://localhost:3000/api/schema \
+  -H "X-Service-Id: dev" \
+  -H "X-Tenant: default"
+```
+
+Returns:
+- `types` - All entity types with their allowed relations
+- `stats` - Relationship counts for each type (as_subject, as_actor, total)
+
+**Get Relationship Graph:**
+```bash
+curl http://localhost:3000/api/schema/graph \
+  -H "X-Service-Id: dev" \
+  -H "X-Tenant: default"
+```
+
+Returns:
+- `nodes` - All entities in the system with their types and IDs
+- `edges` - All relationships between entities
+- `node_count` - Total number of entities
+- `edge_count` - Total number of relationships
+
+### Example Response
+
+```json
+{
+  "types": {
+    "user": { "relations": {} },
+    "group": {
+      "relations": {
+        "member": ["user", "group"]
+      }
+    },
+    "doc": {
+      "relations": {
+        "parent": ["folder"],
+        "owner": ["user", "group"],
+        "editor": ["owner", "parent->editor"],
+        "viewer": ["editor", "parent->viewer"]
+      }
+    }
+  },
+  "stats": {
+    "user": { "as_subject": 0, "as_actor": 4, "total": 4 },
+    "group": { "as_subject": 3, "as_actor": 1, "total": 4 },
+    "doc": { "as_subject": 2, "as_actor": 0, "total": 2 }
+  }
+}
+```
+
+### Use Cases
+
+- **Onboarding**: Help new team members understand your authorization model
+- **Debugging**: Visualize relationship paths to debug permission issues
+- **Documentation**: Generate visual documentation of your access control rules
+- **Monitoring**: Track growth of relationships over time by type

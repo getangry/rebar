@@ -10,6 +10,7 @@ class AuditLog < ApplicationRecord
   scope :for_service, ->(service_id) { where(service_id: service_id) }
   scope :for_action, ->(action) { where(action: action) }
   scope :for_resource, ->(subject, object_id) { where(subject: subject, object_id: object_id) }
+  scope :for_relation, ->(relation) { where(relation: relation) }
   scope :for_actor, ->(actor, actor_id) { where(actor: actor, actor_id: actor_id) }
   scope :recent, -> { order(created_at: :desc) }
   scope :since, ->(time) { where("created_at >= ?", time) }

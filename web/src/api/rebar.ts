@@ -72,7 +72,15 @@ export interface SchemaStats {
   relations: string[];
 }
 
+export interface SchemaInfo {
+  name: string;
+  purpose: string;
+  type_count?: number;
+}
+
 export interface SchemaResponse {
+  current_schema?: SchemaInfo;
+  available_schemas?: SchemaInfo[];
   types: Record<string, {
     relations?: Record<string, string[]>;
   }>;
@@ -152,11 +160,49 @@ export interface AuditLogFilters {
   action_type?: string;
   subject?: string;
   object_id?: string;
+  relation?: string;
   actor?: string;
   actor_id?: string;
   since?: string;
   page?: number;
   per_page?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description?: string;
+  schema_name: string;
+  active: boolean;
+  tenant_id: string;
+  allowed_subjects: string[];
+  allowed_relations: string[];
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  api_key?: string; // Only present on creation/regeneration
+}
+
+export interface CreateServiceRequest {
+  name: string;
+  description?: string;
+  schema_name?: string;
+  active?: boolean;
+  allowed_subjects?: string[];
+  allowed_relations?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ServicesResponse {
+  services: Service[];
+}
+
+export interface RegenerateKeyResponse {
+  message: string;
+  api_key: string;
+  service: Service;
 }
 
 export class RebarClient {
@@ -315,8 +361,15 @@ export class RebarClient {
   }
 
   // Get schema information with statistics
-  async getSchema(): Promise<SchemaResponse> {
-    const response = await fetch(`${this.baseUrl}/api/schema`, {
+  async getSchema(schemaName?: string): Promise<SchemaResponse> {
+    const params = new URLSearchParams();
+    if (schemaName) {
+      params.append('schema_name', schemaName);
+    }
+    const queryString = params.toString();
+    const url = `/api/schema${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(`${this.baseUrl}${url}`, {
       headers: {
         "X-Service-Id": this.serviceId,
         "X-Tenant": this.tenant,
@@ -416,6 +469,66 @@ export class RebarClient {
     }
 
     return response.json();
+  }
+
+  // Get all services
+  async getServices(): Promise<ServicesResponse> {
+    return this.request("GET", "/api/services");
+  }
+
+  // Get a specific service
+  async getService(id: number): Promise<Service> {
+    return this.request("GET", `/api/services/${id}`);
+  }
+
+  // Create a new service
+  async createService(data: CreateServiceRequest): Promise<Service> {
+    return this.request("POST", "/api/services", { service: data });
+  }
+
+  // Update a service
+  async updateService(id: number, data: Partial<CreateServiceRequest>): Promise<Service> {
+    return this.request("PATCH", `/api/services/${id}`, { service: data });
+  }
+
+  // Delete a service
+  async deleteService(id: number): Promise<void> {
+    return this.request("DELETE", `/api/services/${id}`);
+  }
+
+  // Regenerate service API key
+  async regenerateServiceKey(id: number): Promise<RegenerateKeyResponse> {
+    return this.request("POST", `/api/services/${id}/regenerate_key`);
+  }
+
+  // Activate a service
+  async activateService(id: number): Promise<Service> {
+    return this.request("POST", `/api/services/${id}/activate`);
+  }
+
+  // Deactivate a service
+  async deactivateService(id: number): Promise<Service> {
+    return this.request("POST", `/api/services/${id}/deactivate`);
+  }
+
+  // Add allowed subject to service
+  async addServiceSubject(id: number, subject: string): Promise<Service> {
+    return this.request("POST", `/api/services/${id}/subjects`, { subject });
+  }
+
+  // Remove allowed subject from service
+  async removeServiceSubject(id: number, subject: string): Promise<Service> {
+    return this.request("DELETE", `/api/services/${id}/subjects/${encodeURIComponent(subject)}`);
+  }
+
+  // Add allowed relation to service
+  async addServiceRelation(id: number, relation: string): Promise<Service> {
+    return this.request("POST", `/api/services/${id}/relations`, { relation });
+  }
+
+  // Remove allowed relation from service
+  async removeServiceRelation(id: number, relation: string): Promise<Service> {
+    return this.request("DELETE", `/api/services/${id}/relations/${encodeURIComponent(relation)}`);
   }
 }
 

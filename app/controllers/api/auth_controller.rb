@@ -26,10 +26,15 @@ module Api
 
     def engine
       @engine ||= begin
-        schema_path = Rails.root.join("config/auth_schema.rb")
-        load schema_path # Load the schema to ensure it's fresh
-        PermissionEngine.new(schema: AuthSchema, repo: RebacRepo.new(tenant_id: tenant))
+        schema_index = Rails.root.join("schemas/index.rb")
+        load schema_index # Load all schemas
+        PermissionEngine.new(schema: AuthSchema, schema_name: schema_name, repo: RebacRepo.new(tenant_id: tenant))
       end
+    end
+
+    def schema_name
+      # Schema name can come from service configuration or default to 'default'
+      current_service&.dig(:schema_name) || 'default'
     end
 
     def tenant

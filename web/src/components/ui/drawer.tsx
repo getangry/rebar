@@ -26,38 +26,36 @@ export default function Drawer({ open, onClose, children, title }: DrawerProps) 
     <div className="relative z-50">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+        className="fixed inset-0 bg-black/80 transition-opacity animate-in fade-in"
         onClick={onClose}
       />
 
       {/* Slide-over panel */}
       <div className="fixed inset-0 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+          <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
             <div
-              className="pointer-events-auto w-screen max-w-2xl"
+              className="pointer-events-auto w-screen max-w-2xl transform transition-all animate-in slide-in-from-right duration-300"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+              <div className="flex h-full flex-col border-l border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
                 {/* Header */}
-                <div className="bg-primary-600 px-4 py-6 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-medium text-white">{title}</h2>
-                    <button
-                      type="button"
-                      className="rounded-md bg-primary-700 text-primary-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
-                      onClick={onClose}
-                    >
-                      <span className="sr-only">Close panel</span>
-                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                <div className="flex items-start justify-between px-6 py-6 border-b border-gray-200 dark:border-gray-800">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">{title}</h2>
+                  <button
+                    type="button"
+                    className="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    onClick={onClose}
+                  >
+                    <span className="sr-only">Close panel</span>
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
 
                 {/* Content */}
-                <div className="relative flex-1 px-4 py-6 sm:px-6">
+                <div className="relative flex-1 overflow-y-auto px-6 py-6">
                   {children}
                 </div>
               </div>

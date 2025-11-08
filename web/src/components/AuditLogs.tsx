@@ -20,10 +20,16 @@ export default function AuditLogs() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
 
+  // Sorting
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
   // Filters
   const [filters, setFilters] = useState<AuditLogFilters>({
     page: 1,
     per_page: 50,
+    sort_by: 'created_at',
+    sort_order: 'desc',
   });
   const [tempFilters, setTempFilters] = useState<AuditLogFilters>({});
 
@@ -77,6 +83,25 @@ export default function AuditLogs() {
     if (currentPage > 1) {
       setFilters({ ...filters, page: currentPage - 1 });
     }
+  };
+
+  const handleSort = (column: string) => {
+    const newSortOrder = sortBy === column && sortOrder === 'desc' ? 'asc' : 'desc';
+    setSortBy(column);
+    setSortOrder(newSortOrder);
+    setFilters({
+      ...filters,
+      page: 1,
+      sort_by: column,
+      sort_order: newSortOrder,
+    });
+  };
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) {
+      return '↕️';
+    }
+    return sortOrder === 'desc' ? '↓' : '↑';
   };
 
   const formatDate = (dateString: string) => {
@@ -177,6 +202,14 @@ export default function AuditLogs() {
           />
 
           <InputGroup
+            label="Relation"
+            id="relation"
+            placeholder="e.g., editor, viewer, owner"
+            value={tempFilters.relation || ''}
+            onChange={(e) => setTempFilters({ ...tempFilters, relation: e.target.value || undefined })}
+          />
+
+          <InputGroup
             label="Actor"
             id="actor"
             placeholder="e.g., user, group"
@@ -251,11 +284,46 @@ export default function AuditLogs() {
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-gray-200">
-                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Timestamp</TableHead>
-                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Action</TableHead>
-                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Resource</TableHead>
-                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Actor</TableHead>
-                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Service</TableHead>
+                  <TableHead
+                    className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('created_at')}
+                  >
+                    Timestamp {getSortIcon('created_at')}
+                  </TableHead>
+                  <TableHead
+                    className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('action')}
+                  >
+                    Action {getSortIcon('action')}
+                  </TableHead>
+                  <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => handleSort('subject')}
+                        className="text-left hover:text-gray-600 transition-colors"
+                      >
+                        Subject {getSortIcon('subject')}
+                      </button>
+                      <button
+                        onClick={() => handleSort('relation')}
+                        className="text-left text-xs font-normal text-gray-600 hover:text-gray-900 transition-colors"
+                      >
+                        Relation {getSortIcon('relation')}
+                      </button>
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('actor')}
+                  >
+                    Actor {getSortIcon('actor')}
+                  </TableHead>
+                  <TableHead
+                    className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('service_id')}
+                  >
+                    Service {getSortIcon('service_id')}
+                  </TableHead>
                   <TableHead className="bg-gray-50 py-3.5 text-left text-sm font-semibold text-gray-900">Reason</TableHead>
                   <TableHead className="bg-gray-50 relative py-3.5">
                     <span className="sr-only">View</span>

@@ -13,6 +13,10 @@ module ServiceAuth
     @gate ||= PolicyGate.new(service_id: current_service[:id], grant_repo: GrantRepo.new)
   end
 
+  def tenant
+    request.headers["X-Tenant"] || "default"
+  end
+
   private
 
   def authenticate_service!

@@ -19,14 +19,26 @@ module Api
       # Note: Don't use params[:action] directly as it's reserved by Rails
       logs = logs.for_action(params[:action_type]) if params[:action_type].present?
       logs = logs.for_resource(params[:subject], params[:object_id]) if params[:subject].present? && params[:object_id].present?
+      logs = logs.for_relation(params[:relation]) if params[:relation].present?
       logs = logs.for_actor(params[:actor], params[:actor_id]) if params[:actor].present? && params[:actor_id].present?
       logs = logs.since(Time.parse(params[:since])) if params[:since].present?
+
+      # Sorting
+      sort_by = params[:sort_by] || 'created_at'
+      sort_order = params[:sort_order] || 'desc'
+
+      # Validate sort_by to prevent SQL injection
+      allowed_columns = %w[created_at action relation subject object_id actor actor_id resource_type service_id]
+      sort_by = 'created_at' unless allowed_columns.include?(sort_by)
+      sort_order = 'desc' unless %w[asc desc].include?(sort_order)
+
+      logs = logs.order("#{sort_by} #{sort_order}")
 
       # Pagination
       page = (params[:page] || 1).to_i
       per_page = [(params[:per_page] || 50).to_i, 1000].min # Max 1000 per page
 
-      logs = logs.recent.limit(per_page).offset((page - 1) * per_page)
+      logs = logs.limit(per_page).offset((page - 1) * per_page)
 
       render json: {
         logs: logs.map { |log| format_log(log) },

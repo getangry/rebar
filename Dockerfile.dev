@@ -35,5 +35,5 @@ COPY . .
 # Expose port 3000 for Rails server
 EXPOSE 3000
 
-# Start Rails server by default
-CMD ["bin/rails", "server", "-b", "0.0.0.0"]
+# Start Rails server by default (remove stale PID file first)
+CMD ["sh", "-c", "rm -f tmp/pids/server.pid && bin/rails server -b 0.0.0.0"]
