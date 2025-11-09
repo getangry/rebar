@@ -1,15 +1,14 @@
 require 'rails_helper'
 
 RSpec.describe "Complete Authorization Flow", type: :request do
-  let(:headers) do
-    {
-      "Authorization" => "Bearer dev",
-      "X-Tenant" => "acme-corp",
-      "Content-Type" => "application/json"
-    }
-  end
+  let(:test_service) { setup_test_service!(tenant: "acme-corp", name: "integration-test-service") }
+  let(:headers) { test_auth_headers(api_key: test_service[:api_key], tenant: "acme-corp") }
 
   before do
+    # Ensure test service is created before each test
+    test_service
+
+    # Clean up test data
     RelTuple.where(tenant_id: "acme-corp").delete_all
   end
 

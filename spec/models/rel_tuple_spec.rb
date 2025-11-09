@@ -212,12 +212,12 @@ RSpec.describe RelTuple, type: :model do
 
       expect(tuple.tenant_id).to be_a(String)
       expect(tuple.subject).to be_a(String)
-      expect(tuple.id).to be_a(String)
+      expect(tuple.subject_id).to be_a(String)
       expect(tuple.relation).to be_a(String)
       expect(tuple.actor).to be_a(String)
       expect(tuple.actor_id).to be_a(String)
       expect(tuple.actor_rel).to be_a(String)
-      expect(tuple.id).to be_a(Integer)
+      expect(tuple.id).to be_a(String)
     end
 
     it "handles special characters in IDs" do
@@ -232,7 +232,7 @@ RSpec.describe RelTuple, type: :model do
 
       tuple.reload
 
-      expect(tuple.id).to eq("report:2024/Q4#final")
+      expect(tuple.subject_id).to eq("report:2024/Q4#final")
       expect(tuple.actor_id).to eq("alice+admin@example.com")
     end
 
@@ -248,7 +248,7 @@ RSpec.describe RelTuple, type: :model do
 
       tuple.reload
 
-      expect(tuple.id).to eq("报告-2024")
+      expect(tuple.subject_id).to eq("报告-2024")
       expect(tuple.actor_id).to eq("用户-123")
     end
   end
@@ -278,8 +278,8 @@ RSpec.describe RelTuple, type: :model do
 
       expect(tenant_a_tuples.count).to eq(1)
       expect(tenant_b_tuples.count).to eq(1)
-      expect(tenant_a_tuples.first.subj_id).to eq("alice")
-      expect(tenant_b_tuples.first.subj_id).to eq("bob")
+      expect(tenant_a_tuples.first.actor_id).to eq("alice")
+      expect(tenant_b_tuples.first.actor_id).to eq("bob")
     end
   end
 end

@@ -40,7 +40,7 @@ Rails.application.configure do
   config.action_mailer.default_url_options = { host: "example.com" }
 
   # Allow all hosts in test environment (for Swagger/API tests)
-  config.host_authorization = { exclude: ->(request) { true } }
+  config.hosts.clear
 
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr

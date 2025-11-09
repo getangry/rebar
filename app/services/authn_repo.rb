@@ -5,7 +5,7 @@ class AuthnRepo
 
     # Special case: DEV mode allows "dev" as a simple key
     if api_key_value == "dev" && !Rails.env.production?
-      return { id: "dev", name: "dev", service_id: nil, api_key_id: nil }
+      return { id: "dev", name: "dev", service_id: "dev", api_key_id: nil }
     end
 
     # Find and validate the API key

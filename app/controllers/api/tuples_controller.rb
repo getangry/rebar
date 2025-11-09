@@ -59,7 +59,7 @@ module Api
     end
 
     def batch_create
-      tuples = params[:tuples] || []
+      tuples = (params[:tuples] || []).map(&:symbolize_keys)
 
       tuples.each do |tuple|
         gate.allow_tuple_write!(
@@ -88,7 +88,7 @@ module Api
     end
 
     def batch_destroy
-      tuples = params[:tuples] || []
+      tuples = (params[:tuples] || []).map(&:symbolize_keys)
 
       tuples.each do |tuple|
         gate.allow_tuple_write!(
