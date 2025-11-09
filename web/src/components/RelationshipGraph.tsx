@@ -36,6 +36,9 @@ export default function RelationshipGraph() {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set());
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadEntities();
@@ -161,6 +164,52 @@ export default function RelationshipGraph() {
   const width = 1200;
   const height = 800;
 
+  // Filter entities based on search query and selected types
+  const filteredEntities = entities ? Object.entries(entities.entities).reduce((acc, [type, entityList]) => {
+    // Filter by type if any types are selected
+    if (selectedTypes.size > 0 && !selectedTypes.has(type)) {
+      return acc;
+    }
+
+    // Filter by search query
+    const filtered = entityList.filter(entity =>
+      entity.object_id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (filtered.length > 0) {
+      acc[type] = filtered;
+    }
+    return acc;
+  }, {} as Record<string, typeof entities.entities[string]>) : {};
+
+  const allTypes = entities ? Object.keys(entities.entities) : [];
+  const hasActiveFilters = searchQuery.length > 0 || selectedTypes.size > 0;
+
+  const toggleType = (type: string) => {
+    const newSelected = new Set(selectedTypes);
+    if (newSelected.has(type)) {
+      newSelected.delete(type);
+    } else {
+      newSelected.add(type);
+    }
+    setSelectedTypes(newSelected);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedTypes(new Set());
+  };
+
+  const toggleExpanded = (type: string) => {
+    const newExpanded = new Set(expandedTypes);
+    if (newExpanded.has(type)) {
+      newExpanded.delete(type);
+    } else {
+      newExpanded.add(type);
+    }
+    setExpandedTypes(newExpanded);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -174,32 +223,132 @@ export default function RelationshipGraph() {
       {/* Entity Selector */}
       <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-sm font-medium text-gray-900 mb-4">Select an Entity</h3>
-        <div className="space-y-4">
-          {Object.entries(entities.entities).map(([type, entityList]) => (
-            <div key={type}>
-              <div className="flex items-center gap-2 mb-2">
+
+        {/* Search and Filter Controls */}
+        <div className="mb-4 space-y-3">
+          {/* Search Input */}
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -mt-2.5 h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search entities by ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -mt-2.5 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Type Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-600 font-medium">Filter by type:</span>
+            {allTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => toggleType(type)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  selectedTypes.has(type) || selectedTypes.size === 0
+                    ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                    : 'bg-gray-100 text-gray-600 border border-gray-300 opacity-50'
+                }`}
+              >
                 <div
-                  className="w-3 h-3 rounded-full"
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: colors[type as keyof typeof colors] || colors.default }}
                 />
-                <span className="text-sm font-medium text-gray-700">{type}</span>
-                <span className="text-xs text-gray-500">({entityList.length})</span>
-              </div>
-              <div className="flex flex-wrap gap-2 ml-5">
-                {entityList.map((entity) => (
-                  <Button
-                    key={entity.id}
-                    size="sm"
-                    variant={selectedEntity === entity.id ? 'default' : 'outline'}
-                    onClick={() => loadRelationships(entity.id)}
-                    className="text-xs"
-                  >
-                    {entity.object_id}
-                  </Button>
-                ))}
-              </div>
+                {type}
+                <span className="text-gray-500">
+                  ({entities?.entities[type].length || 0})
+                </span>
+              </button>
+            ))}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="ml-2 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {/* Results Count */}
+          {hasActiveFilters && (
+            <div className="text-xs text-gray-600">
+              Showing {Object.values(filteredEntities).reduce((sum, list) => sum + list.length, 0)} of{' '}
+              {Object.values(entities?.entities || {}).reduce((sum, list) => sum + list.length, 0)} entities
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* Entity List */}
+        <div className="space-y-4">
+          {Object.keys(filteredEntities).length === 0 && hasActiveFilters && (
+            <div className="text-center py-8 text-gray-500 text-sm">
+              No entities match your search criteria
+            </div>
+          )}
+          {Object.entries(filteredEntities).map(([type, entityList]) => {
+            const isExpanded = expandedTypes.has(type) || entityList.length <= 8;
+            const displayedEntities = isExpanded ? entityList : entityList.slice(0, 8);
+
+            return (
+              <div key={type}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: colors[type as keyof typeof colors] || colors.default }}
+                  />
+                  <span className="text-sm font-medium text-gray-700">{type}</span>
+                  <span className="text-xs text-gray-500">
+                    ({entityList.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 ml-5">
+                  {displayedEntities.map((entity) => (
+                    <Button
+                      key={entity.id}
+                      size="sm"
+                      variant={selectedEntity === entity.id ? 'default' : 'outline'}
+                      onClick={() => loadRelationships(entity.id)}
+                      className="text-xs font-mono"
+                    >
+                      {entity.object_id}
+                    </Button>
+                  ))}
+                  {entityList.length > 8 && (
+                    <button
+                      onClick={() => toggleExpanded(type)}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1 rounded border border-indigo-200 hover:bg-indigo-50"
+                    >
+                      {isExpanded ? (
+                        <>Show less ({entityList.length - 8} hidden)</>
+                      ) : (
+                        <>Show all ({entityList.length - 8} more)</>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

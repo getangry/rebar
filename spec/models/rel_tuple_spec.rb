@@ -5,26 +5,26 @@ RSpec.describe RelTuple, type: :model do
     it "has a primary key 'pk'" do
       tuple = RelTuple.create!(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
-      expect(tuple.pk).to be_present
-      expect(tuple.pk).to be_a(Integer)
+      expect(tuple.id).to be_present
+      expect(tuple.id).to be_a(String)
     end
 
     it "enforces unique constraint on fact tuple" do
       attrs = {
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice",
-        subj_rel: nil
+        actor: "user",
+        actor_id: "alice",
+        actor_rel: nil
       }
 
       RelTuple.create!(attrs)
@@ -38,15 +38,15 @@ RSpec.describe RelTuple, type: :model do
     it "treats NULL and empty string as different for subj_rel in unique constraint" do
       base_attrs = {
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       }
 
       # Create with NULL subj_rel
-      tuple1 = RelTuple.create!(base_attrs.merge(subj_rel: nil))
+      tuple1 = RelTuple.create!(base_attrs.merge(actor_rel: nil))
 
       # Create with different relation should succeed
       tuple2 = RelTuple.create!(base_attrs.merge(relation: "editor"))
@@ -59,11 +59,11 @@ RSpec.describe RelTuple, type: :model do
   describe "required fields" do
     it "requires tenant_id" do
       tuple = RelTuple.new(
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
       expect(tuple.tenant_id).to eq("default") # Has default value
@@ -72,10 +72,10 @@ RSpec.describe RelTuple, type: :model do
     it "requires ns" do
       tuple = RelTuple.new(
         tenant_id: "test",
-        id: "report-1",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
       expect {
@@ -86,10 +86,10 @@ RSpec.describe RelTuple, type: :model do
     it "requires id" do
       tuple = RelTuple.new(
         tenant_id: "test",
-        ns: "doc",
+        subject: "doc",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
       expect {
@@ -100,10 +100,10 @@ RSpec.describe RelTuple, type: :model do
     it "requires relation" do
       tuple = RelTuple.new(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
-        subj_ns: "user",
-        subj_id: "alice"
+        subject: "doc",
+        subject_id: "report-1",
+        actor: "user",
+        actor_id: "alice"
       )
 
       expect {
@@ -114,10 +114,10 @@ RSpec.describe RelTuple, type: :model do
     it "requires subj_ns" do
       tuple = RelTuple.new(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_id: "alice"
+        actor_id: "alice"
       )
 
       expect {
@@ -128,10 +128,10 @@ RSpec.describe RelTuple, type: :model do
     it "requires subj_id" do
       tuple = RelTuple.new(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user"
+        actor: "user"
       )
 
       expect {
@@ -142,16 +142,16 @@ RSpec.describe RelTuple, type: :model do
     it "allows subj_rel to be null" do
       tuple = RelTuple.create!(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice",
-        subj_rel: nil
+        actor: "user",
+        actor_id: "alice",
+        actor_rel: nil
       )
 
       expect(tuple).to be_persisted
-      expect(tuple.subj_rel).to be_nil
+      expect(tuple.actor_rel).to be_nil
     end
   end
 
@@ -159,11 +159,11 @@ RSpec.describe RelTuple, type: :model do
     it "sets created_at automatically" do
       tuple = RelTuple.create!(
         tenant_id: "test",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
       expect(tuple.created_at).to be_present
@@ -178,17 +178,17 @@ RSpec.describe RelTuple, type: :model do
       1000.times do |i|
         RelTuple.create!(
           tenant_id: "test",
-          ns: "doc",
-          id: "report-#{i}",
+          subject: "doc",
+          subject_id: "report-#{i}",
           relation: "owner",
-          subj_ns: "user",
-          subj_id: "user-#{i}"
+          actor: "user",
+          actor_id: "user-#{i}"
         )
       end
 
       # Query using index
       start_time = Time.now
-      results = RelTuple.where(tenant_id: "test", ns: "doc", id: "report-500", relation: "owner")
+      results = RelTuple.where(tenant_id: "test", subject: "doc", subject_id: "report-500", relation: "owner")
       query_time = Time.now - start_time
 
       expect(results.count).to eq(1)
@@ -200,56 +200,56 @@ RSpec.describe RelTuple, type: :model do
     it "stores all fields as strings except pk" do
       tuple = RelTuple.create!(
         tenant_id: "test-tenant",
-        ns: "document",
-        id: "abc-123",
+        subject: "document",
+        subject_id: "abc-123",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice@example.com",
-        subj_rel: "member"
+        actor: "user",
+        actor_id: "alice@example.com",
+        actor_rel: "member"
       )
 
       tuple.reload
 
       expect(tuple.tenant_id).to be_a(String)
-      expect(tuple.ns).to be_a(String)
+      expect(tuple.subject).to be_a(String)
       expect(tuple.id).to be_a(String)
       expect(tuple.relation).to be_a(String)
-      expect(tuple.subj_ns).to be_a(String)
-      expect(tuple.subj_id).to be_a(String)
-      expect(tuple.subj_rel).to be_a(String)
-      expect(tuple.pk).to be_a(Integer)
+      expect(tuple.actor).to be_a(String)
+      expect(tuple.actor_id).to be_a(String)
+      expect(tuple.actor_rel).to be_a(String)
+      expect(tuple.id).to be_a(Integer)
     end
 
     it "handles special characters in IDs" do
       tuple = RelTuple.create!(
         tenant_id: "test",
-        ns: "doc",
-        id: "report:2024/Q4#final",
+        subject: "doc",
+        subject_id: "report:2024/Q4#final",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice+admin@example.com"
+        actor: "user",
+        actor_id: "alice+admin@example.com"
       )
 
       tuple.reload
 
       expect(tuple.id).to eq("report:2024/Q4#final")
-      expect(tuple.subj_id).to eq("alice+admin@example.com")
+      expect(tuple.actor_id).to eq("alice+admin@example.com")
     end
 
     it "handles unicode characters" do
       tuple = RelTuple.create!(
         tenant_id: "test",
-        ns: "doc",
-        id: "报告-2024",
+        subject: "doc",
+        subject_id: "报告-2024",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "用户-123"
+        actor: "user",
+        actor_id: "用户-123"
       )
 
       tuple.reload
 
       expect(tuple.id).to eq("报告-2024")
-      expect(tuple.subj_id).to eq("用户-123")
+      expect(tuple.actor_id).to eq("用户-123")
     end
   end
 
@@ -257,20 +257,20 @@ RSpec.describe RelTuple, type: :model do
     it "isolates data by tenant_id" do
       RelTuple.create!(
         tenant_id: "tenant-a",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "alice"
+        actor: "user",
+        actor_id: "alice"
       )
 
       RelTuple.create!(
         tenant_id: "tenant-b",
-        ns: "doc",
-        id: "report-1",
+        subject: "doc",
+        subject_id: "report-1",
         relation: "owner",
-        subj_ns: "user",
-        subj_id: "bob"
+        actor: "user",
+        actor_id: "bob"
       )
 
       tenant_a_tuples = RelTuple.where(tenant_id: "tenant-a")

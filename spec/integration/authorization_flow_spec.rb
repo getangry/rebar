@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe "Complete Authorization Flow", type: :request do
   let(:headers) do
     {
-      "X-Service-Id" => "dev",
+      "Authorization" => "Bearer dev",
       "X-Tenant" => "acme-corp",
       "Content-Type" => "application/json"
     }

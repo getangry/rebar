@@ -10,8 +10,8 @@ RSpec.describe 'api/auth', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true,
-                description: 'Service API key'
+      parameter name: 'Authorization', in: :header, type: :string, required: true,
+                description: 'Bearer token (format: Bearer <api_key>)'
       parameter name: 'X-Tenant', in: :header, type: :string, required: false,
                 description: 'Tenant identifier (defaults to "default")'
 
@@ -34,7 +34,7 @@ RSpec.describe 'api/auth', type: :request do
                },
                required: ['allow']
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:'X-Tenant') { 'default' }
         let(:body) do
           {
@@ -59,7 +59,7 @@ RSpec.describe 'api/auth', type: :request do
                  error: { type: :string }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) { { actor: 'user' } }
 
         run_test!
@@ -72,7 +72,7 @@ RSpec.describe 'api/auth', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -93,7 +93,7 @@ RSpec.describe 'api/auth', type: :request do
                  allow: { type: :boolean }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:'X-Tenant') { 'default' }
         let(:body) { { tuple: 'document:1#view@user:alice' } }
 
@@ -106,7 +106,7 @@ RSpec.describe 'api/auth', type: :request do
                  error: { type: :string }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) { { tuple: 'invalid' } }
 
         run_test!
@@ -121,7 +121,7 @@ RSpec.describe 'api/auth', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -147,7 +147,7 @@ RSpec.describe 'api/auth', type: :request do
                },
                required: ['allow']
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:'X-Tenant') { 'default' }
         let(:body) do
           {
@@ -169,7 +169,7 @@ RSpec.describe 'api/auth', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -191,7 +191,7 @@ RSpec.describe 'api/auth', type: :request do
                  path: { type: :array, items: { type: :object } }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:'X-Tenant') { 'default' }
         let(:body) { { tuple: 'document:1#view@user:alice' } }
 

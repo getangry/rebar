@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Audit Logs API", type: :request do
   let(:headers) do
     {
-      "X-Service-Id" => "dev",
+      "Authorization" => "Bearer dev",
       "X-Tenant" => "test-audit",
       "Content-Type" => "application/json"
     }

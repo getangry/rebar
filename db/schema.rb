@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_08_081958) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_09_045303) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -55,6 +55,45 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_081958) do
     t.index ["service_id"], name: "index_api_keys_on_service_id"
   end
 
+  create_table "attribute_schemas", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "active", default: true
+    t.datetime "created_at", null: false
+    t.string "created_by"
+    t.text "description"
+    t.string "entity_type", null: false
+    t.jsonb "schema", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.integer "version", default: 1, null: false
+    t.index ["entity_type", "active"], name: "index_attribute_schemas_on_entity_type_and_active", where: "(active = true)"
+    t.index ["entity_type", "version"], name: "index_attribute_schemas_on_entity_type_and_version", unique: true
+  end
+
+  create_table "attribute_versions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "change_reason"
+    t.datetime "created_at", null: false
+    t.string "created_by"
+    t.integer "current_requests", default: 0
+    t.string "entity_type", null: false
+    t.virtual "is_current", type: :boolean, as: "(valid_until = 'infinity'::timestamp with time zone)", stored: true
+    t.integer "max_requests"
+    t.jsonb "metadata", default: {}, null: false
+    t.uuid "previous_version_id"
+    t.boolean "requires_mfa", default: false
+    t.string "risk_level"
+    t.string "subject", null: false
+    t.string "subject_id", null: false
+    t.string "tenant_id", default: "default", null: false
+    t.datetime "updated_at", null: false
+    t.timestamptz "valid_from", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.timestamptz "valid_until", default: ::Float::INFINITY
+    t.integer "version_number", default: 1, null: false
+    t.index ["metadata"], name: "idx_attr_jsonb", using: :gin
+    t.index ["subject", "subject_id", "is_current"], name: "idx_attr_policy_eval", where: "(is_current = true)"
+    t.index ["subject_id", "valid_from", "valid_until"], name: "idx_attr_point_in_time"
+    t.index ["subject_id", "valid_until"], name: "idx_attr_current_lookup", where: "(valid_until = 'infinity'::timestamp with time zone)", include: ["metadata", "max_requests", "current_requests", "requires_mfa"]
+    t.index ["tenant_id", "entity_type", "subject_id"], name: "idx_on_tenant_id_entity_type_subject_id_0eb843a023"
+  end
+
   create_table "audit_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "action", null: false
     t.string "actor"
@@ -79,6 +118,28 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_081958) do
     t.index ["tenant_id", "created_at"], name: "idx_audit_tenant_time"
     t.index ["tenant_id", "service_id"], name: "idx_audit_tenant_service"
     t.index ["tenant_id", "subject", "object_id"], name: "idx_audit_resource"
+  end
+
+  create_table "rel_tuple_attributes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "approval_required", default: false
+    t.string "approval_status"
+    t.text "change_reason"
+    t.datetime "created_at", null: false
+    t.string "created_by"
+    t.string "granted_by"
+    t.virtual "is_current", type: :boolean, as: "(valid_until = 'infinity'::timestamp with time zone)", stored: true
+    t.integer "max_usage"
+    t.jsonb "metadata", default: {}, null: false
+    t.uuid "previous_version_id"
+    t.string "tenant_id", default: "default", null: false
+    t.uuid "tuple_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "usage_count", default: 0
+    t.timestamptz "valid_from", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.timestamptz "valid_until", default: ::Float::INFINITY
+    t.integer "version_number", default: 1, null: false
+    t.index ["tuple_id", "valid_from", "valid_until"], name: "idx_tuple_attr_temporal"
+    t.index ["tuple_id", "valid_until"], name: "idx_tuple_attr_current", where: "(valid_until = 'infinity'::timestamp with time zone)"
   end
 
   create_table "rel_tuples", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -159,6 +220,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_081958) do
   end
 
   add_foreign_key "api_keys", "services"
+  add_foreign_key "attribute_versions", "attribute_versions", column: "previous_version_id"
+  add_foreign_key "rel_tuple_attributes", "rel_tuple_attributes", column: "previous_version_id"
+  add_foreign_key "rel_tuple_attributes", "rel_tuples", column: "tuple_id", on_delete: :cascade
   add_foreign_key "service_grants", "service_accounts"
   add_foreign_key "service_tokens", "service_accounts"
 end

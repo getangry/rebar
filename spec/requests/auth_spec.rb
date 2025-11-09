@@ -11,7 +11,7 @@ RSpec.describe "Auth API", type: :request do
   describe "POST /auth/check" do
     let(:headers) do
       {
-        "X-Service-Id" => "dev",
+        "Authorization" => "Bearer dev",
         "X-Tenant" => "test-tenant",
         "Content-Type" => "application/json"
       }
@@ -19,7 +19,7 @@ RSpec.describe "Auth API", type: :request do
 
     context "when permission is granted" do
       before do
-        repo.write(ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice")
+        repo.write(subject: "doc", id: "report-1", relation: "owner", actor: "user", actor_id: "alice")
       end
 
       it "returns allow: true for authorized access" do
@@ -64,7 +64,7 @@ RSpec.describe "Auth API", type: :request do
       end
 
       it "returns allow: false when object exists but user has no permission" do
-        repo.write(ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice")
+        repo.write(subject: "doc", id: "report-1", relation: "owner", actor: "user", actor_id: "alice")
 
         post "/auth/check", params: {
           subj_ns: "user",
@@ -81,8 +81,8 @@ RSpec.describe "Auth API", type: :request do
 
     context "with group-based permissions" do
       before do
-        repo.write(ns: "group", id: "eng", relation: "member", subj_ns: "user", subj_id: "alice")
-        repo.write(ns: "doc", id: "report-1", relation: "viewer", subj_ns: "group", subj_id: "eng", subj_rel: "member")
+        repo.write(subject: "group", id: "eng", relation: "member", actor: "user", actor_id: "alice")
+        repo.write(subject: "doc", id: "report-1", relation: "viewer", actor: "group", actor_id: "eng", actor_rel: "member")
       end
 
       it "returns allow: true for group member" do
@@ -101,8 +101,8 @@ RSpec.describe "Auth API", type: :request do
 
     context "with parent inheritance" do
       before do
-        repo.write(ns: "folder", id: "finance", relation: "owner", subj_ns: "user", subj_id: "alice")
-        repo.write(ns: "doc", id: "budget", relation: "parent", subj_ns: "folder", subj_id: "finance")
+        repo.write(subject: "folder", id: "finance", relation: "owner", actor: "user", actor_id: "alice")
+        repo.write(subject: "doc", id: "budget", relation: "parent", actor: "folder", actor_id: "finance")
       end
 
       it "returns allow: true for inherited permission" do
@@ -122,11 +122,11 @@ RSpec.describe "Auth API", type: :request do
     context "with multi-tenant isolation" do
       before do
         # alice owns doc in test-tenant
-        repo.write(ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice")
+        repo.write(subject: "doc", id: "report-1", relation: "owner", actor: "user", actor_id: "alice")
 
         # bob owns same doc ID in different tenant
         other_repo = RebacRepo.new(tenant: "other-tenant")
-        other_repo.write(ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "bob")
+        other_repo.write(subject: "doc", id: "report-1", relation: "owner", actor: "user", actor_id: "bob")
       end
 
       it "enforces tenant isolation - alice cannot access bob's doc" do
@@ -161,14 +161,14 @@ RSpec.describe "Auth API", type: :request do
     end
 
     context "without service authentication" do
-      it "returns forbidden when X-Service-Id header is missing" do
+      it "returns forbidden when Authorization header is missing" do
         post "/auth/check", params: {
           subj_ns: "user",
           subj_id: "alice",
           permission: "owner",
           obj_ns: "doc",
           obj_id: "report-1"
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
         expect(JSON.parse(response.body)).to have_key("error")
@@ -179,7 +179,7 @@ RSpec.describe "Auth API", type: :request do
   describe "POST /auth/explain" do
     let(:headers) do
       {
-        "X-Service-Id" => "dev",
+        "Authorization" => "Bearer dev",
         "X-Tenant" => "test-tenant",
         "Content-Type" => "application/json"
       }
@@ -187,7 +187,7 @@ RSpec.describe "Auth API", type: :request do
 
     context "when permission is granted" do
       before do
-        repo.write(ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice")
+        repo.write(subject: "doc", id: "report-1", relation: "owner", actor: "user", actor_id: "alice")
       end
 
       it "returns allow: true with permission path" do
@@ -229,9 +229,9 @@ RSpec.describe "Auth API", type: :request do
     context "with complex permission path" do
       before do
         # alice -> eng group -> folder owner -> doc viewer (via parent)
-        repo.write(ns: "group", id: "eng", relation: "member", subj_ns: "user", subj_id: "alice")
-        repo.write(ns: "folder", id: "projects", relation: "owner", subj_ns: "group", subj_id: "eng", subj_rel: "member")
-        repo.write(ns: "doc", id: "api-spec", relation: "parent", subj_ns: "folder", subj_id: "projects")
+        repo.write(subject: "group", id: "eng", relation: "member", actor: "user", actor_id: "alice")
+        repo.write(subject: "folder", id: "projects", relation: "owner", actor: "group", actor_id: "eng", actor_rel: "member")
+        repo.write(subject: "doc", id: "api-spec", relation: "parent", actor: "folder", actor_id: "projects")
       end
 
       it "returns the complete permission resolution path" do
@@ -253,14 +253,14 @@ RSpec.describe "Auth API", type: :request do
     end
 
     context "without service authentication" do
-      it "returns forbidden when X-Service-Id header is missing" do
+      it "returns forbidden when Authorization header is missing" do
         post "/auth/explain", params: {
           subj_ns: "user",
           subj_id: "alice",
           permission: "owner",
           obj_ns: "doc",
           obj_id: "report-1"
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
       end

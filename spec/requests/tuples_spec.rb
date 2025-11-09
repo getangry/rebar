@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe "Tuples API", type: :request do
   let(:headers) do
     {
-      "X-Service-Id" => "dev",
+      "Authorization" => "Bearer dev",
       "X-Tenant" => "test-tenant",
       "Content-Type" => "application/json"
     }
@@ -81,7 +81,7 @@ RSpec.describe "Tuples API", type: :request do
           relation: "owner",
           subj_ns: "user",
           subj_id: "alice"
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -165,7 +165,7 @@ RSpec.describe "Tuples API", type: :request do
           relation: "owner",
           subj_ns: "user",
           subj_id: "alice"
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -278,7 +278,7 @@ RSpec.describe "Tuples API", type: :request do
           tuples: [
             { ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice" }
           ]
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -360,7 +360,7 @@ RSpec.describe "Tuples API", type: :request do
           tuples: [
             { ns: "doc", id: "report-1", relation: "owner", subj_ns: "user", subj_id: "alice" }
           ]
-        }.to_json, headers: headers.except("X-Service-Id")
+        }.to_json, headers: headers.except("Authorization")
 
         expect(response).to have_http_status(:forbidden)
       end

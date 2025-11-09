@@ -14,28 +14,44 @@ module Api
       start_time = Time.current
       parsed = parse_request_params
       gate.allow_check!(tenant: tenant, subject: parsed[:subject], subject_id: parsed[:subject_id], permission: parsed[:permission])
-      ok = engine.check(parsed[:actor], parsed[:actor_id], parsed[:permission], parsed[:subject], parsed[:subject_id])
+
+      # Use PolicyEvaluator for attribute support
+      evaluator = PolicyEvaluator.new(tenant_id: tenant, engine: engine)
+      result = evaluator.check(
+        parsed[:actor],
+        parsed[:actor_id],
+        parsed[:permission],
+        parsed[:subject],
+        parsed[:subject_id],
+        parsed[:context] || {}
+      )
 
       # Record analytics
-      record_analytics('check', parsed, ok, start_time)
+      record_analytics('check', parsed, result[:allow], start_time)
 
-      render json: { allow: ok }
+      render json: { allow: result[:allow], reason: result[:reason] }
     end
 
     def explain
       start_time = Time.current
       parsed = parse_request_params
       gate.allow_check!(tenant: tenant, subject: parsed[:subject], subject_id: parsed[:subject_id], permission: parsed[:permission])
-      path = engine.explain(parsed[:actor], parsed[:actor_id], parsed[:permission], parsed[:subject], parsed[:subject_id])
+
+      # Use PolicyEvaluator for enhanced explain with attributes
+      evaluator = PolicyEvaluator.new(tenant_id: tenant, engine: engine)
+      result = evaluator.explain(
+        parsed[:actor],
+        parsed[:actor_id],
+        parsed[:permission],
+        parsed[:subject],
+        parsed[:subject_id],
+        parsed[:context] || {}
+      )
 
       # Record analytics
-      record_analytics('explain', parsed, path.present?, start_time)
+      record_analytics('explain', parsed, result[:allow], start_time)
 
-      if path
-        render json: { allow: true, path: path }
-      else
-        render json: { allow: false }
-      end
+      render json: result
     end
 
     private
@@ -67,7 +83,14 @@ module Api
     end
 
     def p
-      params.permit(:actor, :actor_id, :permission, :subject, :subject_id, :context)
+      permitted = params.permit(:actor, :actor_id, :permission, :subject, :subject_id, context: {})
+
+      # Parse context if it's a string (JSON)
+      if permitted[:context].is_a?(String)
+        permitted[:context] = JSON.parse(permitted[:context]) rescue {}
+      end
+
+      permitted
     end
 
     def record_analytics(event_type, params_hash, result, start_time)

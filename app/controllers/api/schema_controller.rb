@@ -72,13 +72,12 @@ module Api
       
       tuples.each do |tuple|
         # Add subject node
-        # Use tuple['id'] to get object ID column, not primary key
-        subject_key = "#{tuple.subject}:#{tuple['id']}"
+        subject_key = "#{tuple.subject}:#{tuple.subject_id}"
         nodes[subject_key] ||= {
           id: subject_key,
           type: tuple.subject,
-          object_id: tuple['id'],
-          label: "#{tuple.subject}:#{tuple['id']}",
+          object_id: tuple.subject_id,
+          label: "#{tuple.subject}:#{tuple.subject_id}",
           relations: []
         }
 
@@ -123,14 +122,13 @@ module Api
 
       tuples.each do |tuple|
         # Collect unique entities
-        # Use tuple['id'] to get object ID column, not primary key
-        subject_key = "#{tuple.subject}:#{tuple['id']}"
+        subject_key = "#{tuple.subject}:#{tuple.subject_id}"
         actor_key = "#{tuple.actor}:#{tuple.actor_id}"
 
         entities[subject_key] = {
           id: subject_key,
           type: tuple.subject,
-          object_id: tuple['id']
+          object_id: tuple.subject_id
         }
 
         entities[actor_key] = {
@@ -181,17 +179,14 @@ module Api
         }
 
         # Find tuples involving this entity
-        # Cast IDs to strings to ensure type compatibility
-        # Use read_attribute(:id) to get object ID column, not primary key
         related_tuples = RelTuple.where(tenant_id: tenant_id)
-                                 .where("(subject = ? AND id = ?) OR (actor = ? AND actor_id = ?)",
+                                 .where("(subject = ? AND subject_id = ?) OR (actor = ? AND actor_id = ?)",
                                         current_type, current_id.to_s, current_type, current_id.to_s)
                                  .limit(50)
                                  .to_a
 
         related_tuples.each do |tuple|
-          # Use tuple['id'] to access object ID column, not primary key
-          subject_key = "#{tuple.subject}:#{tuple['id']}"
+          subject_key = "#{tuple.subject}:#{tuple.subject_id}"
           actor_key = "#{tuple.actor}:#{tuple.actor_id}"
 
           # Add subject node if not visited
@@ -199,11 +194,11 @@ module Api
             nodes[subject_key] ||= {
               id: subject_key,
               type: tuple.subject,
-              object_id: tuple['id'],
+              object_id: tuple.subject_id,
               label: subject_key,
               depth: depth + 1
             }
-            queue << [tuple.subject, tuple['id'].to_s, depth + 1] if depth < max_depth
+            queue << [tuple.subject, tuple.subject_id.to_s, depth + 1] if depth < max_depth
           end
 
           # Add actor node if not visited

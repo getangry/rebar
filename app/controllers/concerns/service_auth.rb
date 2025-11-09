@@ -20,9 +20,15 @@ module ServiceAuth
   private
 
   def authenticate_service!
-    # DEV ONLY: X-Service-Id header; replace with mTLS/JWT in prod.
-    sid = request.headers["X-Service-Id"]
-    raise ForbiddenError, "missing service id" if sid.blank?
-    @current_service = AuthnRepo.new.authenticate!(sid) # returns {id: ..., name: ...}
+    # Authenticate using standard Authorization: Bearer header
+    auth_header = request.headers["Authorization"]
+    raise ForbiddenError, "missing authorization header" if auth_header.blank?
+
+    # Extract token from "Bearer <token>" format
+    match = auth_header.match(/^Bearer\s+(.+)$/i)
+    raise ForbiddenError, "invalid authorization format (expected: Bearer <token>)" unless match
+
+    api_key = match[1]
+    @current_service = AuthnRepo.new.authenticate!(api_key) # returns {id: ..., name: ..., service_id: ...}
   end
 end

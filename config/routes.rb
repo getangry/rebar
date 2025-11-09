@@ -63,6 +63,21 @@ Rails.application.routes.draw do
     get "analytics/service_usage", to: "analytics#service_usage"
     get "analytics/api_key_usage", to: "analytics#api_key_usage"
     get "analytics/time_series", to: "analytics#time_series"
+
+    # Attributes API
+    # Entity attributes
+    get "attributes/:entity_type/:subject_id", to: "attributes#show"
+    get "attributes/:entity_type/:subject_id/history", to: "attributes#history"
+    post "attributes", to: "attributes#create"
+    delete "attributes/:entity_type/:subject_id", to: "attributes#destroy"
+
+    # Attribute schemas
+    get "attributes/schemas", to: "attributes#schemas"
+    post "attributes/schemas", to: "attributes#create_schema"
+
+    # Relationship attributes
+    get "attributes/relationships/:tuple_id", to: "attributes#show_relationship"
+    post "attributes/relationships", to: "attributes#create_relationship"
   end
 
   # Defines the root path route ("/")

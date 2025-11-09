@@ -10,7 +10,7 @@ RSpec.describe 'api/tuples', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -32,7 +32,7 @@ RSpec.describe 'api/tuples', type: :request do
                  ok: { type: :boolean }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) do
           {
             subject: 'document',
@@ -52,7 +52,7 @@ RSpec.describe 'api/tuples', type: :request do
                  error: { type: :string }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) { { subject: 'document' } }
 
         run_test!
@@ -65,7 +65,7 @@ RSpec.describe 'api/tuples', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -86,7 +86,7 @@ RSpec.describe 'api/tuples', type: :request do
                  ok: { type: :boolean }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) do
           {
             subject: 'document',
@@ -109,7 +109,7 @@ RSpec.describe 'api/tuples', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -140,7 +140,7 @@ RSpec.describe 'api/tuples', type: :request do
                  count: { type: :integer }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) do
           {
             tuples: [
@@ -165,7 +165,7 @@ RSpec.describe 'api/tuples', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -195,7 +195,7 @@ RSpec.describe 'api/tuples', type: :request do
                  count: { type: :integer }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) do
           {
             tuples: [

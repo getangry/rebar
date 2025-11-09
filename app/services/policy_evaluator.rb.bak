@@ -1,0 +1,369 @@
+class PolicyEvaluator
+  # Enhanced permission checking with attribute-based policies
+  #
+  # This wraps the existing PermissionEngine and adds attribute evaluation
+  # for temporal access, usage limits, approval workflows, etc.
+
+  attr_reader :tenant_id, :engine
+
+  def initialize(tenant_id:, engine:)
+    @tenant_id = tenant_id
+    @engine = engine
+  end
+
+  # Check permission with attribute evaluation
+  #
+  # @param actor [String] Actor type (e.g., 'user')
+  # @param actor_id [String] Actor ID (e.g., 'alice')
+  # @param permission [String] Permission being checked (e.g., 'read')
+  # @param subject [String] Subject type (e.g., 'document')
+  # @param subject_id [String] Subject ID (e.g., '123')
+  # @param context [Hash] Runtime context for policy evaluation
+  # @return [Hash] { allow: Boolean, reason: String|nil, trace: Array|nil }
+  def check(actor, actor_id, permission, subject, subject_id, context = {})
+    # Step 1: Check if relationship exists (ReBAC layer)
+    has_relationship = engine.check(actor, actor_id, permission, subject, subject_id)
+
+    unless has_relationship
+      return {
+        allow: false,
+        reason: "No relationship found: #{actor}:#{actor_id} # #{permission} @ #{subject}:#{subject_id}"
+      }
+    end
+
+    # Step 2: Get the tuple ID for attribute loading
+    tuple = find_tuple(actor, actor_id, permission, subject, subject_id)
+
+    unless tuple
+      # Relationship exists in engine but not in database (shouldn't happen)
+      return { allow: true }
+    end
+
+    # Step 3: Load attributes (ABAC layer)
+    rel_attrs = load_relationship_attributes(tuple.id)
+    entity_attrs = load_entity_attributes(subject, subject_id)
+
+    # Step 4: Evaluate attribute-based policies
+    evaluate_policies(tuple, rel_attrs, entity_attrs, context)
+  end
+
+  # Enhanced explain with attribute evaluation trace
+  def explain(actor, actor_id, permission, subject, subject_id, context = {})
+    trace = []
+
+    # Step 1: Relationship check
+    path = engine.explain(actor, actor_id, permission, subject, subject_id)
+
+    if path.nil?
+      trace << {
+        check: 'relationship_exists',
+        result: false,
+        details: "No path found from #{actor}:#{actor_id} to #{subject}:#{subject_id}"
+      }
+
+      return {
+        allow: false,
+        reason: 'No relationship found',
+        trace: trace
+      }
+    end
+
+    trace << {
+      check: 'relationship_exists',
+      result: true,
+      details: "Path: #{path.join(' -> ')}"
+    }
+
+    # Step 2: Find tuple and load attributes
+    tuple = find_tuple(actor, actor_id, permission, subject, subject_id)
+
+    unless tuple
+      return { allow: true, trace: trace } # No attributes to evaluate
+    end
+
+    rel_attrs = load_relationship_attributes(tuple.id)
+    entity_attrs = load_entity_attributes(subject, subject_id)
+
+    # Step 3: Evaluate each policy with detailed trace
+    result = evaluate_policies_with_trace(tuple, rel_attrs, entity_attrs, context, trace)
+
+    result.merge(trace: trace)
+  end
+
+  private
+
+  def find_tuple(actor, actor_id, permission, subject, subject_id)
+    RelTuple.find_by(
+      tenant_id: tenant_id,
+      actor: actor,
+      actor_id: actor_id,
+      relation: permission,
+      subject: subject,
+      subject_id: subject_id
+    )
+  end
+
+  def load_relationship_attributes(tuple_id)
+    AttributeCache.fetch_rel_attrs(tuple_id, tenant_id: tenant_id)
+  end
+
+  def load_entity_attributes(subject, subject_id)
+    AttributeCache.fetch_entity_attrs(subject, subject_id, tenant_id: tenant_id)
+  end
+
+  def evaluate_policies(tuple, rel_attrs, entity_attrs, context)
+    # 1. Temporal validity check
+    if rel_attrs && rel_attrs.valid_until']
+      valid_until = parse_timestamp(rel_attrs.valid_until'])
+      if valid_until && valid_until < Time.current
+        return deny("Access expired at #{valid_until.iso8601}")
+      end
+    end
+
+    # 2. Usage limit check
+    if rel_attrs && rel_attrs.max_usage']
+      usage_count = rel_attrs.usage_count'] || 0
+      max_usage = rel_attrs.max_usage']
+
+      if usage_count >= max_usage
+        return deny("Usage limit exceeded (#{usage_count}/#{max_usage})")
+      end
+
+      # Increment usage counter (async to avoid blocking)
+      increment_usage_async(rel_attrs.id']) if rel_attrs.id']
+    end
+
+    # 3. Approval workflow check
+    if rel_attrs && rel_attrs.approval_required']
+      approval_status = rel_attrs.approval_status']
+
+      case approval_status
+      when 'pending'
+        ticket = rel_attrs.metadata&.dig('ticket_id') || 'N/A'
+        return deny("Approval pending (ticket: #{ticket})")
+      when 'denied'
+        return deny("Access denied by approver")
+      when 'approved'
+        # Continue to next check
+      else
+        return deny("Approval required (status: #{approval_status})")
+      end
+    end
+
+    # 4. MFA requirement check
+    if requires_mfa?(rel_attrs, entity_attrs)
+      unless context[:mfa_verified] || context['mfa_verified']
+        return deny("Multi-factor authentication required")
+      end
+    end
+
+    # 5. IP whitelist check
+    allowed_ips = entity_attrs&.metadata&.dig('allowed_ips')
+    if allowed_ips && context[:ip_address]
+      unless ip_in_range?(context[:ip_address], allowed_ips)
+        return deny("IP address not in allowed range")
+      end
+    end
+
+    # 6. Geographic restriction check
+    allowed_regions = entity_attrs&.metadata&.dig('allowed_regions')
+    if allowed_regions && context[:geo_region]
+      unless allowed_regions.include?(context[:geo_region])
+        return deny("Access not allowed from region: #{context[:geo_region]}")
+      end
+    end
+
+    # 7. Risk level check
+    if rel_attrs && rel_attrs.risk_level'] == 'high'
+      # High risk access requires additional verification
+      unless context[:additional_verification] || context['additional_verification']
+        return deny("Additional verification required for high-risk access")
+      end
+    end
+
+    # 8. Time-of-day restriction
+    allowed_hours = entity_attrs&.metadata&.dig('allowed_hours')
+    if allowed_hours && !within_allowed_hours?(allowed_hours)
+      return deny("Access not allowed during current time")
+    end
+
+    # All checks passed
+    allow
+  end
+
+  def evaluate_policies_with_trace(tuple, rel_attrs, entity_attrs, context, trace)
+    # Temporal validity
+    if rel_attrs && rel_attrs.valid_until']
+      valid_until = parse_timestamp(rel_attrs.valid_until'])
+      if valid_until
+        remaining = valid_until - Time.current
+        remaining_days = (remaining / 1.day).round(1)
+
+        if valid_until < Time.current
+          trace << {
+            check: 'temporal_validity',
+            result: false,
+            details: "Expired at #{valid_until.iso8601}",
+            policy: "IF valid_until < NOW() THEN DENY"
+          }
+          return deny("Access expired")
+        else
+          trace << {
+            check: 'temporal_validity',
+            result: true,
+            details: "Valid until #{valid_until.iso8601} (#{remaining_days} days remaining)"
+          }
+        end
+      end
+    else
+      trace << {
+        check: 'temporal_validity',
+        result: true,
+        details: "No expiration set"
+      }
+    end
+
+    # Usage limits
+    if rel_attrs && rel_attrs.max_usage']
+      usage_count = rel_attrs.usage_count'] || 0
+      max_usage = rel_attrs.max_usage']
+      remaining = max_usage - usage_count
+
+      if usage_count >= max_usage
+        trace << {
+          check: 'usage_limit',
+          result: false,
+          details: "Usage limit reached (#{usage_count}/#{max_usage})",
+          policy: "IF usage_count >= max_usage THEN DENY"
+        }
+        return deny("Usage limit exceeded")
+      else
+        trace << {
+          check: 'usage_limit',
+          result: true,
+          details: "Usage: #{usage_count}/#{max_usage} (#{remaining} remaining)"
+        }
+      end
+    else
+      trace << {
+        check: 'usage_limit',
+        result: true,
+        details: "No usage limit set"
+      }
+    end
+
+    # MFA requirement
+    requires_mfa = requires_mfa?(rel_attrs, entity_attrs)
+    mfa_verified = context[:mfa_verified] || context['mfa_verified']
+
+    if requires_mfa
+      if mfa_verified
+        trace << {
+          check: 'mfa_requirement',
+          result: true,
+          details: "MFA verified"
+        }
+      else
+        trace << {
+          check: 'mfa_requirement',
+          result: false,
+          details: "MFA required but not verified",
+          policy: "IF requires_mfa AND NOT context.mfa_verified THEN DENY"
+        }
+        return deny("MFA required")
+      end
+    else
+      trace << {
+        check: 'mfa_requirement',
+        result: true,
+        details: "MFA not required"
+      }
+    end
+
+    # IP whitelist
+    allowed_ips = entity_attrs&.metadata&.dig('allowed_ips')
+    if allowed_ips && context[:ip_address]
+      if ip_in_range?(context[:ip_address], allowed_ips)
+        trace << {
+          check: 'ip_whitelist',
+          result: true,
+          details: "IP #{context[:ip_address]} in allowed range"
+        }
+      else
+        trace << {
+          check: 'ip_whitelist',
+          result: false,
+          details: "IP #{context[:ip_address]} not in allowed ranges: #{allowed_ips.join(', ')}",
+          policy: "IF ip_address NOT IN allowed_ips THEN DENY"
+        }
+        return deny("IP not allowed")
+      end
+    end
+
+    # All checks passed
+    trace << {
+      check: 'final_decision',
+      result: true,
+      details: "All policy checks passed"
+    }
+
+    allow
+  end
+
+  def requires_mfa?(rel_attrs, entity_attrs)
+    # Check both relationship and entity attributes
+    (rel_attrs && rel_attrs.requires_mfa']) ||
+      (entity_attrs && entity_attrs['requires_mfa']) ||
+      (entity_attrs&.metadata&.dig('requires_mfa'))
+  end
+
+  def ip_in_range?(ip, ranges)
+    require 'ipaddr'
+    client_ip = IPAddr.new(ip)
+    ranges.any? { |range| IPAddr.new(range).include?(client_ip) }
+  rescue IPAddr::InvalidAddressError => e
+    Rails.logger.error("Invalid IP address: #{e.message}")
+    false
+  end
+
+  def within_allowed_hours?(allowed_hours)
+    # Format: { "start": "09:00", "end": "17:00", "timezone": "America/New_York" }
+    current_time = Time.current
+    tz = TZInfo::Timezone.get(allowed_hours['timezone'] || 'UTC')
+    local_time = tz.to_local(current_time)
+
+    start_hour, start_min = allowed_hours['start'].split(':').map(&:to_i)
+    end_hour, end_min = allowed_hours['end'].split(':').map(&:to_i)
+
+    start_time = local_time.change(hour: start_hour, min: start_min)
+    end_time = local_time.change(hour: end_hour, min: end_min)
+
+    local_time >= start_time && local_time <= end_time
+  rescue StandardError => e
+    Rails.logger.error("Error checking allowed hours: #{e.message}")
+    true # Fail open if configuration is invalid
+  end
+
+  def parse_timestamp(value)
+    return nil if value.nil?
+    return value if value.is_a?(Time)
+    return nil if value.to_s == 'Infinity' || value == Float::INFINITY
+
+    Time.parse(value.to_s)
+  rescue ArgumentError
+    nil
+  end
+
+  def increment_usage_async(rel_attr_id)
+    # Increment usage counter in background job to avoid blocking
+    IncrementUsageJob.perform_later(rel_attr_id)
+  end
+
+  def allow
+    { allow: true, reason: nil }
+  end
+
+  def deny(reason)
+    { allow: false, reason: reason }
+  end
+end

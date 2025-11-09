@@ -294,7 +294,7 @@ RSpec.describe "Auth Schema", type: :service do
     it "supports direct user ownership" do
       # Schema: doc owner includes "user"
 
-      repo.write(ns: "doc", id: "report", relation: "owner", subj_ns: "user", subj_id: "alice")
+      repo.write(subject: "doc", id: "report", relation: "owner", actor: "user", actor_id: "alice")
 
       expect(engine.check("user", "alice", "owner", "doc", "report")).to eq(true)
     end
@@ -302,8 +302,8 @@ RSpec.describe "Auth Schema", type: :service do
     it "supports group ownership" do
       # Schema: doc owner includes "group"
 
-      repo.write(ns: "group", id: "eng", relation: "member", subj_ns: "user", subj_id: "alice")
-      repo.write(ns: "doc", id: "report", relation: "owner", subj_ns: "group", subj_id: "eng", subj_rel: "member")
+      repo.write(subject: "group", id: "eng", relation: "member", actor: "user", actor_id: "alice")
+      repo.write(subject: "doc", id: "report", relation: "owner", actor: "group", actor_id: "eng", actor_rel: "member")
 
       expect(engine.check("user", "alice", "owner", "doc", "report")).to eq(true)
     end
@@ -311,7 +311,7 @@ RSpec.describe "Auth Schema", type: :service do
     it "supports permission cascading (owner -> editor -> viewer)" do
       # Schema: viewer includes editor, editor includes owner
 
-      repo.write(ns: "doc", id: "report", relation: "owner", subj_ns: "user", subj_id: "alice")
+      repo.write(subject: "doc", id: "report", relation: "owner", actor: "user", actor_id: "alice")
 
       expect(engine.check("user", "alice", "viewer", "doc", "report")).to eq(true)
       expect(engine.check("user", "alice", "editor", "doc", "report")).to eq(true)
@@ -320,8 +320,8 @@ RSpec.describe "Auth Schema", type: :service do
     it "supports parent inheritance" do
       # Schema: doc viewer includes "parent->viewer"
 
-      repo.write(ns: "folder", id: "finance", relation: "owner", subj_ns: "user", subj_id: "alice")
-      repo.write(ns: "doc", id: "budget", relation: "parent", subj_ns: "folder", subj_id: "finance")
+      repo.write(subject: "folder", id: "finance", relation: "owner", actor: "user", actor_id: "alice")
+      repo.write(subject: "doc", id: "budget", relation: "parent", actor: "folder", actor_id: "finance")
 
       expect(engine.check("user", "alice", "viewer", "doc", "budget")).to eq(true)
     end
@@ -329,9 +329,9 @@ RSpec.describe "Auth Schema", type: :service do
     it "supports nested group membership" do
       # Schema: group member includes "group"
 
-      repo.write(ns: "group", id: "frontend", relation: "member", subj_ns: "user", subj_id: "alice")
-      repo.write(ns: "group", id: "eng", relation: "member", subj_ns: "group", subj_id: "frontend")
-      repo.write(ns: "doc", id: "api-spec", relation: "viewer", subj_ns: "group", subj_id: "eng", subj_rel: "member")
+      repo.write(subject: "group", id: "frontend", relation: "member", actor: "user", actor_id: "alice")
+      repo.write(subject: "group", id: "eng", relation: "member", actor: "group", actor_id: "frontend")
+      repo.write(subject: "doc", id: "api-spec", relation: "viewer", actor: "group", actor_id: "eng", actor_rel: "member")
 
       expect(engine.check("user", "alice", "viewer", "doc", "api-spec")).to eq(true)
     end

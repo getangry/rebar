@@ -9,7 +9,7 @@ RSpec.describe 'api/services', type: :request do
       description 'Get all services for the current tenant'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '200', 'services listed' do
@@ -36,7 +36,7 @@ RSpec.describe 'api/services', type: :request do
                  }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         run_test!
       end
     end
@@ -47,7 +47,7 @@ RSpec.describe 'api/services', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -79,7 +79,7 @@ RSpec.describe 'api/services', type: :request do
                  active: { type: :boolean }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) do
           {
             service: {
@@ -100,7 +100,7 @@ RSpec.describe 'api/services', type: :request do
                  errors: { type: :array, items: { type: :string } }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:body) { { service: {} } }
 
         run_test!
@@ -115,7 +115,7 @@ RSpec.describe 'api/services', type: :request do
       tags 'Services'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '200', 'service found' do
@@ -131,14 +131,14 @@ RSpec.describe 'api/services', type: :request do
                  metadata: { type: :object }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
 
         run_test!
       end
 
       response '404', 'service not found' do
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 999999 }
 
         run_test!
@@ -150,7 +150,7 @@ RSpec.describe 'api/services', type: :request do
       consumes 'application/json'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       parameter name: :body, in: :body, schema: {
@@ -169,7 +169,7 @@ RSpec.describe 'api/services', type: :request do
       }
 
       response '200', 'service updated' do
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
         let(:body) { { service: { name: 'Updated Name' } } }
 
@@ -181,11 +181,11 @@ RSpec.describe 'api/services', type: :request do
       tags 'Services'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '204', 'service deleted' do
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
 
         run_test!
@@ -201,7 +201,7 @@ RSpec.describe 'api/services', type: :request do
       description 'Generate a new API key for the service (invalidates old key)'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '200', 'key regenerated' do
@@ -212,7 +212,7 @@ RSpec.describe 'api/services', type: :request do
                  service: { type: :object }
                }
 
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
 
         run_test!
@@ -227,11 +227,11 @@ RSpec.describe 'api/services', type: :request do
       tags 'Services'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '200', 'service activated' do
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
 
         run_test!
@@ -246,11 +246,11 @@ RSpec.describe 'api/services', type: :request do
       tags 'Services'
       produces 'application/json'
 
-      parameter name: 'X-Service-Id', in: :header, type: :string, required: true
+      parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: 'X-Tenant', in: :header, type: :string, required: false
 
       response '200', 'service deactivated' do
-        let(:'X-Service-Id') { 'dev' }
+        let(:Authorization) { 'Bearer dev' }
         let(:id) { 1 }
 
         run_test!

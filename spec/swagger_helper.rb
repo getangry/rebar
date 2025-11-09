@@ -48,11 +48,11 @@ RSpec.configure do |config|
       ],
       components: {
         securitySchemes: {
-          ServiceKey: {
-            type: :apiKey,
-            name: 'X-Service-Id',
-            in: :header,
-            description: 'Service API key (format: rebar_test_* or rebar_live_*)'
+          BearerAuth: {
+            type: :http,
+            scheme: :bearer,
+            bearerFormat: 'API Key',
+            description: 'Service API key in Bearer format (format: rebar_test_* or rebar_live_*, dev mode: "dev")'
           },
           TenantId: {
             type: :apiKey,
@@ -63,7 +63,7 @@ RSpec.configure do |config|
         }
       },
       security: [
-        { ServiceKey: [], TenantId: [] }
+        { BearerAuth: [] }
       ]
     }
   }
